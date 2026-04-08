@@ -37,7 +37,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: pnpm run build -- --base-href /Genealogy-OS/
+        run: pnpm run build
 
       - name: Copy index.html to 404.html for SPA routing
         run: cp dist/genealogy-os/browser/index.html dist/genealogy-os/browser/404.html
