@@ -1,19 +1,29 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { filter, take } from 'rxjs';
-import { TranslatePipe } from '@ngx-translate/core';
-import { CollaborationService } from '../../core/services/collaboration.service';
-import { StorageService } from '../../core/services/storage.service';
-import { CollaborationSession } from '../../core/models';
+import { CommonModule } from "@angular/common";
+import { Component, type OnInit } from "@angular/core";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
+import {
+	type ActivatedRoute,
+	type Router,
+	RouterModule,
+} from "@angular/router";
+import { TranslatePipe } from "@ngx-translate/core";
+import { filter, take } from "rxjs";
+import type { CollaborationSession } from "../../core/models";
+import type { CollaborationService } from "../../core/services/collaboration.service";
+import type { StorageService } from "../../core/services/storage.service";
 
 @Component({
-  selector: 'app-collaborate',
-  standalone: true,
-  imports: [CommonModule, RouterModule, MatButtonModule, MatIconModule, TranslatePipe],
-  template: `
+	selector: "app-collaborate",
+	standalone: true,
+	imports: [
+		CommonModule,
+		RouterModule,
+		MatButtonModule,
+		MatIconModule,
+		TranslatePipe,
+	],
+	template: `
     <div class="collab-page dot-grid">
 
       <!-- Corner logo -->
@@ -77,7 +87,8 @@ import { CollaborationSession } from '../../core/models';
       <div class="deco-v"></div>
     </div>
   `,
-  styles: [`
+	styles: [
+		`
     .collab-page {
       min-height:100vh; display:flex; align-items:center; justify-content:center;
       position:relative; overflow:hidden;
@@ -152,36 +163,46 @@ import { CollaborationSession } from '../../core/models';
     .t-btn.secondary:hover { border-color:var(--border-mid); color:var(--text-primary); }
     .t-btn.primary { background:transparent; border:1px solid var(--border-accent); color:var(--red); }
     .t-btn.primary:hover { background:var(--red-dim); box-shadow:var(--red-glow); }
-  `],
+  `,
+	],
 })
 export class CollaborateComponent implements OnInit {
-  state: 'loading' | 'valid' | 'invalid' = 'loading';
-  session: CollaborationSession | null = null;
-  treeName = '';
+	state: "loading" | "valid" | "invalid" = "loading";
+	session: CollaborationSession | null = null;
+	treeName = "";
 
-  constructor(
-    private route: ActivatedRoute,
-    private router: Router,
-    private collab: CollaborationService,
-    private storage: StorageService,
-  ) {}
+	constructor(
+		private route: ActivatedRoute,
+		private router: Router,
+		private collab: CollaborationService,
+		private storage: StorageService,
+	) {}
 
-  ngOnInit(): void {
-    this.storage.ready$.pipe(filter(Boolean), take(1)).subscribe(() => {
-      const treeId = this.route.snapshot.queryParamMap.get('tree') ?? '';
-      const token  = this.route.snapshot.queryParamMap.get('token') ?? '';
-      if (!treeId || !token) { this.state = 'invalid'; return; }
-      this.session = this.collab.resolveToken(treeId, token);
-      if (!this.session) { this.state = 'invalid'; return; }
-      const tree = this.storage.getTree(treeId);
-      if (!tree) { this.state = 'invalid'; return; }
-      this.treeName = tree.name;
-      this.collab.saveSession(this.session);
-      this.state = 'valid';
-    });
-  }
+	ngOnInit(): void {
+		this.storage.ready$.pipe(filter(Boolean), take(1)).subscribe(() => {
+			const treeId = this.route.snapshot.queryParamMap.get("tree") ?? "";
+			const token = this.route.snapshot.queryParamMap.get("token") ?? "";
+			if (!treeId || !token) {
+				this.state = "invalid";
+				return;
+			}
+			this.session = this.collab.resolveToken(treeId, token);
+			if (!this.session) {
+				this.state = "invalid";
+				return;
+			}
+			const tree = this.storage.getTree(treeId);
+			if (!tree) {
+				this.state = "invalid";
+				return;
+			}
+			this.treeName = tree.name;
+			this.collab.saveSession(this.session);
+			this.state = "valid";
+		});
+	}
 
-  openTree(): void {
-    if (this.session) this.router.navigate(['/tree', this.session.treeId]);
-  }
+	openTree(): void {
+		if (this.session) this.router.navigate(["/tree", this.session.treeId]);
+	}
 }

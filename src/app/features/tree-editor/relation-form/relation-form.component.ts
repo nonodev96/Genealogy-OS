@@ -1,50 +1,70 @@
-import { Component, Inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatButtonModule } from '@angular/material/button';
-import { MatSelectModule } from '@angular/material/select';
-import { MatIconModule } from '@angular/material/icon';
-import { TranslatePipe } from '@ngx-translate/core';
-import { Person, Relation, RelationType } from '../../../core/models';
-import { TreeLayoutService } from '../../../core/services/tree-layout.service';
+import { CommonModule } from "@angular/common";
+import { Component, inject, type OnInit } from "@angular/core";
+import {
+	FormBuilder,
+	type FormGroup,
+	ReactiveFormsModule,
+	Validators,
+} from "@angular/forms";
+import { MatButtonModule } from "@angular/material/button";
+import { MatDatepickerModule } from "@angular/material/datepicker";
+import {
+	MAT_DIALOG_DATA,
+	MatDialogModule,
+	MatDialogRef,
+} from "@angular/material/dialog";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatSelectModule } from "@angular/material/select";
+import { TranslatePipe } from "@ngx-translate/core";
+import type { Person, Relation, RelationType } from "../../../core/models";
+import { TreeLayoutService } from "../../../core/services/tree-layout.service";
 
 export interface RelationFormData {
-  relation?: Relation;
-  persons: Person[];
-  preselectedFrom?: string;
+	relation?: Relation;
+	persons: Person[];
+	preselectedFrom?: string;
 }
 
-interface RelOption { value: RelationType; label: string; group: string; }
+interface RelOption {
+	value: RelationType;
+	label: string;
+	group: string;
+}
 
 const OPTIONS: RelOption[] = [
-  { value: 'parentOf', label: 'parentOf', group: 'filiation' },
-  { value: 'childOf', label: 'childOf', group: 'filiation' },
-  { value: 'adoptiveParentOf', label: 'adoptiveParentOf', group: 'filiation' },
-  { value: 'adoptiveChildOf', label: 'adoptiveChildOf', group: 'filiation' },
-  { value: 'stepParentOf', label: 'stepParentOf', group: 'filiation' },
-  { value: 'stepChildOf', label: 'stepChildOf', group: 'filiation' },
-  { value: 'guardianOf', label: 'guardianOf', group: 'filiation' },
-  { value: 'wardOf', label: 'wardOf', group: 'filiation' },
-  { value: 'partnerOf', label: 'partnerOf', group: 'partner' },
-  { value: 'siblingOf', label: 'siblingOf', group: 'sibling' },
-  { value: 'halfSiblingOf', label: 'halfSiblingOf', group: 'sibling' },
-  { value: 'ancestorOf', label: 'ancestorOf', group: 'lineage' },
-  { value: 'descendantOf', label: 'descendantOf', group: 'lineage' },
+	{ value: "parentOf", label: "parentOf", group: "filiation" },
+	{ value: "childOf", label: "childOf", group: "filiation" },
+	{ value: "adoptiveParentOf", label: "adoptiveParentOf", group: "filiation" },
+	{ value: "adoptiveChildOf", label: "adoptiveChildOf", group: "filiation" },
+	{ value: "stepParentOf", label: "stepParentOf", group: "filiation" },
+	{ value: "stepChildOf", label: "stepChildOf", group: "filiation" },
+	{ value: "guardianOf", label: "guardianOf", group: "filiation" },
+	{ value: "wardOf", label: "wardOf", group: "filiation" },
+	{ value: "partnerOf", label: "partnerOf", group: "partner" },
+	{ value: "siblingOf", label: "siblingOf", group: "sibling" },
+	{ value: "halfSiblingOf", label: "halfSiblingOf", group: "sibling" },
+	{ value: "ancestorOf", label: "ancestorOf", group: "lineage" },
+	{ value: "descendantOf", label: "descendantOf", group: "lineage" },
 ];
 
 @Component({
-  selector: 'app-relation-form',
-  standalone: true,
-  imports: [
-    CommonModule, ReactiveFormsModule, MatDialogModule,
-    MatFormFieldModule, MatInputModule, MatDatepickerModule, MatButtonModule,
-    MatSelectModule, MatIconModule, TranslatePipe,
-  ],
-  template: `
+	selector: "app-relation-form",
+	standalone: true,
+	imports: [
+		CommonModule,
+		ReactiveFormsModule,
+		MatDialogModule,
+		MatFormFieldModule,
+		MatInputModule,
+		MatDatepickerModule,
+		MatButtonModule,
+		MatSelectModule,
+		MatIconModule,
+		TranslatePipe,
+	],
+	template: `
     <h2 mat-dialog-title>
       <span class="marker">//</span>
       {{ (isEdit ? 'RELATION.FORM.TITLE_EDIT' : 'RELATION.FORM.TITLE_ADD') | translate }}
@@ -115,7 +135,8 @@ const OPTIONS: RelOption[] = [
       </button>
     </mat-dialog-actions>
   `,
-  styles: [`
+	styles: [
+		`
     .marker { color:var(--red); margin-right:8px; }
     .form-grid { display:flex; flex-wrap:wrap; gap:12px; padding:14px 0; }
     .full { width:100%; }
@@ -131,47 +152,63 @@ const OPTIONS: RelOption[] = [
     .ep-node { color:var(--text-primary); font-family:var(--font-display); font-size:10px; letter-spacing:0.06em; }
     .ep-arrow { color:var(--text-muted); white-space:nowrap; }
     .ep-arrow span { font-style:italic; }
-  `],
+  `,
+	],
 })
 export class RelationFormComponent implements OnInit {
-  form!: FormGroup;
-  isEdit = false;
-  groups: { name: string; options: RelOption[] }[] = [];
+	private fb = inject(FormBuilder);
+	private dialogRef = inject(MatDialogRef<RelationFormComponent>);
+	data = inject<RelationFormData>(MAT_DIALOG_DATA);
 
-  constructor(
-    private fb: FormBuilder,
-    private dialogRef: MatDialogRef<RelationFormComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: RelationFormData,
-  ) { }
+	form!: FormGroup;
+	isEdit = false;
+	groups: { name: string; options: RelOption[] }[] = [];
 
-  ngOnInit(): void {
-    this.isEdit = !!this.data.relation;
-    const r = this.data.relation;
-    this.form = this.fb.group({
-      from: [r?.from ?? this.data.preselectedFrom ?? '', Validators.required],
-      type: [r?.type ?? '', Validators.required],
-      to: [r?.to ?? '', Validators.required],
-      startDate: [r?.startDate ? new Date(r.startDate) : null],
-      endDate: [r?.endDate ? new Date(r.endDate) : null],
-      notes: [r?.notes ?? ''],
-    });
-    const grpNames = [...new Set(OPTIONS.map(o => o.group))];
-    this.groups = grpNames.map(n => ({ name: n, options: OPTIONS.filter(o => o.group === n) }));
-  }
+	ngOnInit(): void {
+		this.isEdit = !!this.data.relation;
+		const r = this.data.relation;
+		this.form = this.fb.group({
+			from: [r?.from ?? this.data.preselectedFrom ?? "", Validators.required],
+			type: [r?.type ?? "", Validators.required],
+			to: [r?.to ?? "", Validators.required],
+			startDate: [r?.startDate ? new Date(r.startDate) : null],
+			endDate: [r?.endDate ? new Date(r.endDate) : null],
+			notes: [r?.notes ?? ""],
+		});
+		const grpNames = [...new Set(OPTIONS.map((o) => o.group))];
+		this.groups = grpNames.map((n) => ({
+			name: n,
+			options: OPTIONS.filter((o) => o.group === n),
+		}));
+	}
 
-  get targets(): Person[] { return this.data.persons.filter(p => p.id !== this.form.value.from); }
-  get previewColor(): string { return TreeLayoutService.edgeColor(this.form.value.type); }
-  getName(id: string): string { return this.data.persons.find(p => p.id === id)?.name ?? id; }
-  onCancel(): void { this.dialogRef.close(null); }
+	get targets(): Person[] {
+		return this.data.persons.filter((p) => p.id !== this.form.value.from);
+	}
+	get previewColor(): string {
+		return TreeLayoutService.edgeColor(this.form.value.type);
+	}
+	getName(id: string): string {
+		return this.data.persons.find((p) => p.id === id)?.name ?? id;
+	}
+	onCancel(): void {
+		this.dialogRef.close(null);
+	}
 
-  onSave(): void {
-    if (this.form.invalid) return;
-    const v = this.form.value;
-    this.dialogRef.close({
-      from: v.from, to: v.to, type: v.type,
-      startDate: v.startDate ? (v.startDate as Date).toISOString().split('T')[0] : undefined,
-      endDate: v.endDate ? (v.endDate as Date).toISOString().split('T')[0] : undefined,
-      notes: v.notes || undefined,
-    });
-  }
+	onSave(): void {
+		if (this.form.invalid) return;
+		const v = this.form.value;
+		this.dialogRef.close({
+			from: v.from,
+			to: v.to,
+			type: v.type,
+			startDate: v.startDate
+				? (v.startDate as Date).toISOString().split("T")[0]
+				: undefined,
+			endDate: v.endDate
+				? (v.endDate as Date).toISOString().split("T")[0]
+				: undefined,
+			notes: v.notes || undefined,
+		});
+	}
 }

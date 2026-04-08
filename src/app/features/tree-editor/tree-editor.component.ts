@@ -1,45 +1,67 @@
+import { BreakpointObserver, Breakpoints } from "@angular/cdk/layout";
+import { CommonModule } from "@angular/common";
 import {
-  Component, OnInit, OnDestroy, ViewChild, inject,
-  ChangeDetectionStrategy, ChangeDetectorRef,
-} from '@angular/core';
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
-import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatSidenavModule } from '@angular/material/sidenav';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatMenuModule } from '@angular/material/menu';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatTabsModule } from '@angular/material/tabs';
-import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { Subscription, fromEvent } from 'rxjs';
-import { filter } from 'rxjs/operators';
+	ChangeDetectionStrategy,
+	type ChangeDetectorRef,
+	Component,
+	inject,
+	type OnDestroy,
+	type OnInit,
+	ViewChild,
+} from "@angular/core";
+import { MatButtonModule } from "@angular/material/button";
+import type { MatDialog } from "@angular/material/dialog";
+import { MatDividerModule } from "@angular/material/divider";
+import { MatIconModule } from "@angular/material/icon";
+import { MatMenuModule } from "@angular/material/menu";
+import { MatSidenavModule } from "@angular/material/sidenav";
+import type { MatSnackBar } from "@angular/material/snack-bar";
+import { MatTabsModule } from "@angular/material/tabs";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { type ActivatedRoute, RouterModule } from "@angular/router";
+import { TranslatePipe, TranslateService } from "@ngx-translate/core";
+import { fromEvent, Subscription } from "rxjs";
+import { filter } from "rxjs/operators";
 
-import { FamilyTree, Person, Relation, TreeLayout } from '../../core/models';
-import { TreeService } from '../../core/services/tree.service';
-import { ExportService } from '../../core/services/export.service';
-import { CollaborationService } from '../../core/services/collaboration.service';
-import { TreeLayoutService } from '../../core/services/tree-layout.service';
-import { HistoryService } from '../../core/services/history.service';
-
-import { TreeCanvasComponent } from './tree-canvas/tree-canvas.component';
-import { PersonFormComponent, PersonFormData } from './person-form/person-form.component';
-import { RelationFormComponent, RelationFormData } from './relation-form/relation-form.component';
+import type {
+	FamilyTree,
+	Person,
+	Relation,
+	TreeLayout,
+} from "../../core/models";
+import type { CollaborationService } from "../../core/services/collaboration.service";
+import type { ExportService } from "../../core/services/export.service";
+import { HistoryService } from "../../core/services/history.service";
+import type { TreeService } from "../../core/services/tree.service";
+import { TreeLayoutService } from "../../core/services/tree-layout.service";
+import {
+	PersonFormComponent,
+	type PersonFormData,
+} from "./person-form/person-form.component";
+import {
+	RelationFormComponent,
+	type RelationFormData,
+} from "./relation-form/relation-form.component";
+import { TreeCanvasComponent } from "./tree-canvas/tree-canvas.component";
 
 @Component({
-  selector: 'app-tree-editor',
-  standalone: true,
-  imports: [
-    CommonModule, RouterModule,
-    MatSidenavModule, MatButtonModule, MatIconModule,
-    MatMenuModule, MatTooltipModule, MatDividerModule, MatTabsModule,
-    TreeCanvasComponent, TranslatePipe,
-  ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+	selector: "app-tree-editor",
+	standalone: true,
+	imports: [
+		CommonModule,
+		RouterModule,
+		MatSidenavModule,
+		MatButtonModule,
+		MatIconModule,
+		MatMenuModule,
+		MatTooltipModule,
+		MatDividerModule,
+		MatTabsModule,
+		TreeCanvasComponent,
+		TranslatePipe,
+	],
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	template: `
     <div class="editor-shell" *ngIf="tree; else loading">
 
       <!-- Top bar -->
@@ -209,7 +231,8 @@ import { RelationFormComponent, RelationFormData } from './relation-form/relatio
       </div>
     </ng-template>
   `,
-  styles: [`
+	styles: [
+		`
     :host { display:flex; flex-direction:column; height:100vh; }
     .editor-shell { display:flex; flex-direction:column; height:100vh; }
 
@@ -369,173 +392,282 @@ import { RelationFormComponent, RelationFormData } from './relation-form/relatio
       .back-btn { padding:4px 6px; }
       .tab-pane { height:calc(100vh - 48px - 48px); }
     }
-  `],
+  `,
+	],
 })
 export class TreeEditorComponent implements OnInit, OnDestroy {
-  @ViewChild('canvas') canvasRef?: TreeCanvasComponent;
+	@ViewChild("canvas") canvasRef?: TreeCanvasComponent;
 
-  private translate = inject(TranslateService);
-  private historyService = inject(HistoryService);
-  private breakpointObserver = inject(BreakpointObserver);
+	private translate = inject(TranslateService);
+	private historyService = inject(HistoryService);
+	private breakpointObserver = inject(BreakpointObserver);
 
-  isMobile = false;
-  sidenavOpen = true;
+	isMobile = false;
+	sidenavOpen = true;
 
-  tree: FamilyTree | null = null;
-  layout: TreeLayout | null = null;
-  selectedPersonId: string | null = null;
-  canUndo = false;
-  canRedo = false;
+	tree: FamilyTree | null = null;
+	layout: TreeLayout | null = null;
+	selectedPersonId: string | null = null;
+	canUndo = false;
+	canRedo = false;
 
-  private subs = new Subscription();
+	private subs = new Subscription();
 
-  constructor(
-    private route: ActivatedRoute,
-    private treeService: TreeService,
-    private exportService: ExportService,
-    private collab: CollaborationService,
-    private dialog: MatDialog,
-    private snack: MatSnackBar,
-    public cdr: ChangeDetectorRef,
-  ) { }
+	constructor(
+		private route: ActivatedRoute,
+		private treeService: TreeService,
+		private exportService: ExportService,
+		private collab: CollaborationService,
+		private dialog: MatDialog,
+		private snack: MatSnackBar,
+		public cdr: ChangeDetectorRef,
+	) {}
 
-  ngOnInit(): void {
-    this.subs.add(
-      this.breakpointObserver.observe([Breakpoints.XSmall, Breakpoints.Small])
-        .subscribe(state => {
-          this.isMobile = state.matches;
-          if (!this.isMobile) this.sidenavOpen = true;
-          else this.sidenavOpen = false;
-          this.cdr.markForCheck();
-        })
-    );
+	ngOnInit(): void {
+		this.subs.add(
+			this.breakpointObserver
+				.observe([Breakpoints.XSmall, Breakpoints.Small])
+				.subscribe((state) => {
+					this.isMobile = state.matches;
+					if (!this.isMobile) this.sidenavOpen = true;
+					else this.sidenavOpen = false;
+					this.cdr.markForCheck();
+				}),
+		);
 
-    const treeId = this.route.snapshot.paramMap.get('id') ?? '';
-    this.treeService.setActiveTree(treeId);
-    this.subs.add(
-      this.treeService.activeTree$.subscribe(tree => {
-        this.tree = tree ?? null;
-        this.layout = tree ? new TreeLayoutService().computeLayout(tree.persons, tree.relations) : null;
-        this.cdr.markForCheck();
-      })
-    );
-    this.subs.add(
-      this.historyService.changed$.subscribe(() => {
-        this.canUndo = this.historyService.canUndo(this.tree?.id ?? '');
-        this.canRedo = this.historyService.canRedo(this.tree?.id ?? '');
-        this.cdr.markForCheck();
-      })
-    );
-    this.subs.add(
-      fromEvent<KeyboardEvent>(document, 'keydown').subscribe(ev => {
-        const mod = ev.ctrlKey || ev.metaKey;
-        if (!mod || !this.tree) return;
-        if (ev.key === 'z' && !ev.shiftKey) {
-          ev.preventDefault();
-          this.undoAction();
-        } else if ((ev.key === 'z' && ev.shiftKey) || ev.key === 'y') {
-          ev.preventDefault();
-          this.redoAction();
-        }
-      })
-    );
-  }
+		const treeId = this.route.snapshot.paramMap.get("id") ?? "";
+		this.treeService.setActiveTree(treeId);
+		this.subs.add(
+			this.treeService.activeTree$.subscribe((tree) => {
+				this.tree = tree ?? null;
+				this.layout = tree
+					? new TreeLayoutService().computeLayout(tree.persons, tree.relations)
+					: null;
+				this.cdr.markForCheck();
+			}),
+		);
+		this.subs.add(
+			this.historyService.changed$.subscribe(() => {
+				this.canUndo = this.historyService.canUndo(this.tree?.id ?? "");
+				this.canRedo = this.historyService.canRedo(this.tree?.id ?? "");
+				this.cdr.markForCheck();
+			}),
+		);
+		this.subs.add(
+			fromEvent<KeyboardEvent>(document, "keydown").subscribe((ev) => {
+				const mod = ev.ctrlKey || ev.metaKey;
+				if (!mod || !this.tree) return;
+				if (ev.key === "z" && !ev.shiftKey) {
+					ev.preventDefault();
+					this.undoAction();
+				} else if ((ev.key === "z" && ev.shiftKey) || ev.key === "y") {
+					ev.preventDefault();
+					this.redoAction();
+				}
+			}),
+		);
+	}
 
-  ngOnDestroy(): void {
-    this.subs.unsubscribe();
-    this.treeService.setActiveTree(null);
-    this.historyService.clearTree(this.tree?.id ?? '');
-  }
+	ngOnDestroy(): void {
+		this.subs.unsubscribe();
+		this.treeService.setActiveTree(null);
+		this.historyService.clearTree(this.tree?.id ?? "");
+	}
 
-  async undoAction(): Promise<void> {
-    if (this.tree) await this.treeService.undo(this.tree.id);
-  }
+	async undoAction(): Promise<void> {
+		if (this.tree) await this.treeService.undo(this.tree.id);
+	}
 
-  async redoAction(): Promise<void> {
-    if (this.tree) await this.treeService.redo(this.tree.id);
-  }
+	async redoAction(): Promise<void> {
+		if (this.tree) await this.treeService.redo(this.tree.id);
+	}
 
-  selectPerson(id: string): void {
-    this.selectedPersonId = id === this.selectedPersonId ? null : id;
-    this.cdr.markForCheck();
-  }
-  deselectAll(): void { this.selectedPersonId = null; this.cdr.markForCheck(); }
+	selectPerson(id: string): void {
+		this.selectedPersonId = id === this.selectedPersonId ? null : id;
+		this.cdr.markForCheck();
+	}
+	deselectAll(): void {
+		this.selectedPersonId = null;
+		this.cdr.markForCheck();
+	}
 
-  get selectedPerson(): Person | undefined { return this.tree?.persons.find(p => p.id === this.selectedPersonId); }
-  getPersonById(id: string): Person | undefined { return this.tree?.persons.find(p => p.id === id); }
-  getPersonName(id: string): string { return this.tree?.persons.find(p => p.id === id)?.name ?? '?'; }
-  getEdgeColor(type: any): string { return TreeLayoutService.edgeColor(type); }
-  getRelLabel(type: any): string { return TreeLayoutService.label(type); }
+	get selectedPerson(): Person | undefined {
+		return this.tree?.persons.find((p) => p.id === this.selectedPersonId);
+	}
+	getPersonById(id: string): Person | undefined {
+		return this.tree?.persons.find((p) => p.id === id);
+	}
+	getPersonName(id: string): string {
+		return this.tree?.persons.find((p) => p.id === id)?.name ?? "?";
+	}
+	getEdgeColor(type: any): string {
+		return TreeLayoutService.edgeColor(type);
+	}
+	getRelLabel(type: any): string {
+		return TreeLayoutService.label(type);
+	}
 
-  getPersonRelations(personId: string): { type: string; name: string }[] {
-    if (!this.tree) return [];
-    return this.treeService.getRelatedPersons(this.tree, personId).map(({ person, relation }) => ({
-      type: TreeLayoutService.label(relation.type),
-      name: person.name,
-    }));
-  }
+	getPersonRelations(personId: string): { type: string; name: string }[] {
+		if (!this.tree) return [];
+		return this.treeService
+			.getRelatedPersons(this.tree, personId)
+			.map(({ person, relation }) => ({
+				type: TreeLayoutService.label(relation.type),
+				name: person.name,
+			}));
+	}
 
-  openAddPerson(): void {
-    this.dialog.open(PersonFormComponent, { data: { treeId: this.tree!.id } satisfies PersonFormData, width: '480px', maxWidth: '95vw' })
-      .afterClosed().pipe(filter(Boolean)).subscribe(async (data) => {
-        const person = await this.treeService.addPerson(this.tree!.id, data);
-        this.snack.open(this.translate.instant('TREE_EDITOR.SNACK.PERSON_ADDED', { name: person.name }), '', { duration: 2500 });
-      });
-  }
+	openAddPerson(): void {
+		this.dialog
+			.open(PersonFormComponent, {
+				data: { treeId: this.tree!.id } satisfies PersonFormData,
+				width: "480px",
+				maxWidth: "95vw",
+			})
+			.afterClosed()
+			.pipe(filter(Boolean))
+			.subscribe(async (data) => {
+				const person = await this.treeService.addPerson(this.tree!.id, data);
+				this.snack.open(
+					this.translate.instant("TREE_EDITOR.SNACK.PERSON_ADDED", {
+						name: person.name,
+					}),
+					"",
+					{ duration: 2500 },
+				);
+			});
+	}
 
-  openEditPerson(person: Person | undefined): void {
-    if (!person) return;
-    this.dialog.open(PersonFormComponent, { data: { person, treeId: this.tree!.id } satisfies PersonFormData, width: '480px', maxWidth: '95vw' })
-      .afterClosed().pipe(filter(Boolean)).subscribe(async (data) => {
-        await this.treeService.updatePerson(this.tree!.id, { ...person, ...data });
-        this.snack.open(this.translate.instant('TREE_EDITOR.SNACK.PERSON_UPDATED'), '', { duration: 2000 });
-      });
-  }
+	openEditPerson(person: Person | undefined): void {
+		if (!person) return;
+		this.dialog
+			.open(PersonFormComponent, {
+				data: { person, treeId: this.tree!.id } satisfies PersonFormData,
+				width: "480px",
+				maxWidth: "95vw",
+			})
+			.afterClosed()
+			.pipe(filter(Boolean))
+			.subscribe(async (data) => {
+				await this.treeService.updatePerson(this.tree!.id, {
+					...person,
+					...data,
+				});
+				this.snack.open(
+					this.translate.instant("TREE_EDITOR.SNACK.PERSON_UPDATED"),
+					"",
+					{ duration: 2000 },
+				);
+			});
+	}
 
-  async deletePerson(p: Person): Promise<void> {
-    if (!confirm(`delete "${p.name}"? all edges will also be removed.`)) return;
-    await this.treeService.deletePerson(this.tree!.id, p.id);
-    if (this.selectedPersonId === p.id) this.selectedPersonId = null;
-    this.snack.open(this.translate.instant('TREE_EDITOR.SNACK.PERSON_DELETED'), '', { duration: 2000 });
-  }
+	async deletePerson(p: Person): Promise<void> {
+		if (!confirm(`delete "${p.name}"? all edges will also be removed.`)) return;
+		await this.treeService.deletePerson(this.tree!.id, p.id);
+		if (this.selectedPersonId === p.id) this.selectedPersonId = null;
+		this.snack.open(
+			this.translate.instant("TREE_EDITOR.SNACK.PERSON_DELETED"),
+			"",
+			{ duration: 2000 },
+		);
+	}
 
-  openAddRelation(fromId?: string): void {
-    this.dialog.open(RelationFormComponent, {
-      data: { persons: this.tree!.persons, preselectedFrom: fromId } satisfies RelationFormData,
-      width: '480px', maxWidth: '95vw',
-    }).afterClosed().pipe(filter(Boolean)).subscribe(async (data) => {
-      await this.treeService.addRelation(this.tree!.id, data.from, data.to, data.type,
-        { startDate: data.startDate, endDate: data.endDate, notes: data.notes });
-      this.snack.open(this.translate.instant('TREE_EDITOR.SNACK.RELATION_ADDED'), '', { duration: 2000 });
-    });
-  }
+	openAddRelation(fromId?: string): void {
+		this.dialog
+			.open(RelationFormComponent, {
+				data: {
+					persons: this.tree!.persons,
+					preselectedFrom: fromId,
+				} satisfies RelationFormData,
+				width: "480px",
+				maxWidth: "95vw",
+			})
+			.afterClosed()
+			.pipe(filter(Boolean))
+			.subscribe(async (data) => {
+				await this.treeService.addRelation(
+					this.tree!.id,
+					data.from,
+					data.to,
+					data.type,
+					{
+						startDate: data.startDate,
+						endDate: data.endDate,
+						notes: data.notes,
+					},
+				);
+				this.snack.open(
+					this.translate.instant("TREE_EDITOR.SNACK.RELATION_ADDED"),
+					"",
+					{ duration: 2000 },
+				);
+			});
+	}
 
-  openEditRelation(rel: Relation): void {
-    this.dialog.open(RelationFormComponent, {
-      data: { relation: rel, persons: this.tree!.persons } satisfies RelationFormData,
-      width: '480px',
-      maxWidth: '95vw',
-    }).afterClosed().pipe(filter(Boolean)).subscribe(async (data) => {
-      await this.treeService.updateRelation(this.tree!.id, { ...rel, ...data });
-      this.snack.open(this.translate.instant('TREE_EDITOR.SNACK.RELATION_UPDATED'), '', { duration: 2000 });
-    });
-  }
+	openEditRelation(rel: Relation): void {
+		this.dialog
+			.open(RelationFormComponent, {
+				data: {
+					relation: rel,
+					persons: this.tree!.persons,
+				} satisfies RelationFormData,
+				width: "480px",
+				maxWidth: "95vw",
+			})
+			.afterClosed()
+			.pipe(filter(Boolean))
+			.subscribe(async (data) => {
+				await this.treeService.updateRelation(this.tree!.id, {
+					...rel,
+					...data,
+				});
+				this.snack.open(
+					this.translate.instant("TREE_EDITOR.SNACK.RELATION_UPDATED"),
+					"",
+					{ duration: 2000 },
+				);
+			});
+	}
 
-  async deleteRelation(rel: Relation): Promise<void> {
-    if (!confirm('delete this relation?')) return;
-    await this.treeService.deleteRelation(this.tree!.id, rel.id);
-    this.snack.open(this.translate.instant('TREE_EDITOR.SNACK.RELATION_DELETED'), '', { duration: 2000 });
-  }
+	async deleteRelation(rel: Relation): Promise<void> {
+		if (!confirm("delete this relation?")) return;
+		await this.treeService.deleteRelation(this.tree!.id, rel.id);
+		this.snack.open(
+			this.translate.instant("TREE_EDITOR.SNACK.RELATION_DELETED"),
+			"",
+			{ duration: 2000 },
+		);
+	}
 
-  async shareTree(): Promise<void> {
-    const token = this.tree!.permissions.ownerToken;
-    const link = await this.collab.generateCollaborationLink(this.tree!.id, token);
-    if (!link) { this.snack.open(this.translate.instant('TREE_EDITOR.SNACK.SHARE_ERROR'), '', { duration: 3000 }); return; }
-    await navigator.clipboard.writeText(link).catch(() => { });
-    this.snack.open(this.translate.instant('TREE_EDITOR.SNACK.SHARE_COPIED'), '', { duration: 4000 });
-  }
+	async shareTree(): Promise<void> {
+		const token = this.tree!.permissions.ownerToken;
+		const link = await this.collab.generateCollaborationLink(
+			this.tree!.id,
+			token,
+		);
+		if (!link) {
+			this.snack.open(
+				this.translate.instant("TREE_EDITOR.SNACK.SHARE_ERROR"),
+				"",
+				{ duration: 3000 },
+			);
+			return;
+		}
+		await navigator.clipboard.writeText(link).catch(() => {});
+		this.snack.open(
+			this.translate.instant("TREE_EDITOR.SNACK.SHARE_COPIED"),
+			"",
+			{ duration: 4000 },
+		);
+	}
 
-  exportSVG(): void { this.exportService.downloadSVG(this.tree!, this.canvasRef?.getSVGElement()); }
-  exportText(): void { this.exportService.downloadText(this.tree!); }
-  exportJSON(): void { this.exportService.downloadJSON(this.tree!); }
+	exportSVG(): void {
+		this.exportService.downloadSVG(this.tree!, this.canvasRef?.getSVGElement());
+	}
+	exportText(): void {
+		this.exportService.downloadText(this.tree!);
+	}
+	exportJSON(): void {
+		this.exportService.downloadJSON(this.tree!);
+	}
 }

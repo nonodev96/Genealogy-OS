@@ -1,30 +1,53 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatDialogModule, MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatMenuModule } from '@angular/material/menu';
-import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { filter } from 'rxjs/operators';
-
-import { FamilyTree } from '../../core/models';
-import { TreeService } from '../../core/services/tree.service';
-import { StorageService } from '../../core/services/storage.service';
-import { ExportService } from '../../core/services/export.service';
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { CommonModule } from "@angular/common";
+import {
+	ChangeDetectionStrategy,
+	ChangeDetectorRef,
+	Component,
+	inject,
+	type OnInit,
+} from "@angular/core";
+import {
+	type FormBuilder,
+	type FormGroup,
+	ReactiveFormsModule,
+	Validators,
+} from "@angular/forms";
+import { MatButtonModule } from "@angular/material/button";
+import {
+	MatDialog,
+	MatDialogModule,
+	type MatDialogRef,
+} from "@angular/material/dialog";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatMenuModule } from "@angular/material/menu";
+import { MatSelectModule } from "@angular/material/select";
+import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { Router, RouterModule } from "@angular/router";
+import { TranslatePipe, TranslateService } from "@ngx-translate/core";
+import { filter } from "rxjs/operators";
+import type { FamilyTree } from "../../core/models";
+import { ExportService } from "../../core/services/export.service";
+import { StorageService } from "../../core/services/storage.service";
+import { TreeService } from "../../core/services/tree.service";
 
 /* ── New-tree dialog ───────────────────────────────── */
 @Component({
-    selector: 'app-new-tree-dialog',
-    standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, TranslatePipe],
-    template: `
+	selector: "app-new-tree-dialog",
+	standalone: true,
+	imports: [
+		CommonModule,
+		ReactiveFormsModule,
+		MatDialogModule,
+		MatFormFieldModule,
+		MatInputModule,
+		MatButtonModule,
+		MatIconModule,
+		TranslatePipe,
+	],
+	template: `
     <h2 mat-dialog-title>
       <span class="dlg-marker">//</span> {{ 'TREE.NEW_DIALOG.TITLE' | translate }}
     </h2>
@@ -48,27 +71,44 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
       </button>
     </mat-dialog-actions>
   `,
-    styles: [`
+	styles: [
+		`
     .dlg-form { display:flex; flex-direction:column; gap:16px; padding:16px 0; min-width:360px; }
     .full { width:100%; }
     .dlg-marker { color:var(--red); margin-right:6px; font-family:var(--font-mono); }
     h2 { display:flex; align-items:center; }
-  `],
+  `,
+	],
 })
 export class NewTreeDialogComponent {
-    form: FormGroup;
-    constructor(private fb: FormBuilder, private ref: MatDialogRef<NewTreeDialogComponent>) {
-        this.form = fb.group({ name: ['', Validators.required], description: [''] });
-    }
-    save(): void { if (this.form.invalid) return; this.ref.close(this.form.value); }
+	form: FormGroup;
+	constructor(
+		private fb: FormBuilder,
+		private ref: MatDialogRef<NewTreeDialogComponent>,
+	) {
+		this.form = fb.group({
+			name: ["", Validators.required],
+			description: [""],
+		});
+	}
+	save(): void {
+		if (this.form.invalid) return;
+		this.ref.close(this.form.value);
+	}
 }
 
 /* ── Import dialog ─────────────────────────────────── */
 @Component({
-    selector: 'app-import-dialog',
-    standalone: true,
-    imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule, TranslatePipe],
-    template: `
+	selector: "app-import-dialog",
+	standalone: true,
+	imports: [
+		CommonModule,
+		MatDialogModule,
+		MatButtonModule,
+		MatIconModule,
+		TranslatePipe,
+	],
+	template: `
     <h2 mat-dialog-title><span class="dlg-marker">//</span> {{ 'TREE.IMPORT_DIALOG.TITLE' | translate }}</h2>
     <mat-dialog-content>
       <div class="drop-zone" (click)="fileInput.click()"
@@ -87,7 +127,8 @@ export class NewTreeDialogComponent {
       </button>
     </mat-dialog-actions>
   `,
-    styles: [`
+	styles: [
+		`
     .dlg-marker { color:var(--red); margin-right:6px; }
     .drop-zone {
       border:1px dashed var(--border-mid); border-radius:var(--radius-md);
@@ -100,27 +141,43 @@ export class NewTreeDialogComponent {
     .drop-zone.has-file .upload-ico { color:var(--red) !important; }
     .drop-label { font-family:var(--font-mono); color:var(--text-secondary); margin-top:8px; font-size:12px; }
     .drop-hint { font-size:10px; color:var(--text-muted); letter-spacing:0.08em; margin-top:4px; }
-  `],
+  `,
+	],
 })
 export class ImportDialogComponent {
-    file: File | null = null;
-    constructor(private ref: MatDialogRef<ImportDialogComponent>) { }
-    onFileChange(e: Event): void { this.file = (e.target as HTMLInputElement).files?.[0] ?? null; }
-    onDrop(e: DragEvent): void { e.preventDefault(); this.file = e.dataTransfer?.files?.[0] ?? null; }
-    confirm(): void { this.ref.close(this.file); }
+	file: File | null = null;
+	constructor(private ref: MatDialogRef<ImportDialogComponent>) {}
+	onFileChange(e: Event): void {
+		this.file = (e.target as HTMLInputElement).files?.[0] ?? null;
+	}
+	onDrop(e: DragEvent): void {
+		e.preventDefault();
+		this.file = e.dataTransfer?.files?.[0] ?? null;
+	}
+	confirm(): void {
+		this.ref.close(this.file);
+	}
 }
 
 /* ── Dashboard ─────────────────────────────────────── */
 @Component({
-    selector: 'app-dashboard',
-    standalone: true,
-    imports: [
-        CommonModule, RouterModule, MatButtonModule, MatIconModule,
-        MatDialogModule, MatMenuModule, MatSnackBarModule, MatTooltipModule,
-        MatFormFieldModule, MatSelectModule, TranslatePipe,
-    ],
-    changeDetection: ChangeDetectionStrategy.OnPush,
-    template: `
+	selector: "app-dashboard",
+	standalone: true,
+	imports: [
+		CommonModule,
+		RouterModule,
+		MatButtonModule,
+		MatIconModule,
+		MatDialogModule,
+		MatMenuModule,
+		MatSnackBarModule,
+		MatTooltipModule,
+		MatFormFieldModule,
+		MatSelectModule,
+		TranslatePipe,
+	],
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	template: `
     <div class="dash dot-grid">
 
       <!-- Header -->
@@ -234,7 +291,8 @@ export class ImportDialogComponent {
 
     </div>
   `,
-    styles: [`
+	styles: [
+		`
     :host { display:block; height:100vh; }
     .dash { min-height:100vh; display:flex; flex-direction:column; }
 
@@ -372,75 +430,107 @@ export class ImportDialogComponent {
     }
     .lang-field .mat-mdc-text-field-wrapper { padding: 0 8px !important; }
     .lang-field .mdc-notched-outline__notch { border-right: none !important; }
-  `],
+  `,
+	],
 })
 export class DashboardComponent implements OnInit {
-    private treeService = inject(TreeService);
-    private storage = inject(StorageService);
-    private exportService = inject(ExportService);
-    private dialog = inject(MatDialog);
-    private snack = inject(MatSnackBar);
-    private router = inject(Router);
-    private cdr = inject(ChangeDetectorRef);
-    private translate = inject(TranslateService);
+	private treeService = inject(TreeService);
+	private storage = inject(StorageService);
+	private exportService = inject(ExportService);
+	private dialog = inject(MatDialog);
+	private snack = inject(MatSnackBar);
+	private router = inject(Router);
+	private cdr = inject(ChangeDetectorRef);
+	private translate = inject(TranslateService);
 
-    get currentLang(): string { return this.translate.currentLang || 'es'; }
-    changeLang(lang: string): void { this.translate.use(lang); this.cdr.markForCheck(); }
+	get currentLang(): string {
+		return this.translate.currentLang || "es";
+	}
+	changeLang(lang: string): void {
+		this.translate.use(lang);
+		this.cdr.markForCheck();
+	}
 
-    trees$ = this.storage.trees$;
-    now = new Date();
-    private clockInterval: any;
+	trees$ = this.storage.trees$;
+	now = new Date();
+	private clockInterval: any;
 
-    constructor() { }
+	constructor() {}
 
-    ngOnInit(): void {
-        this.clockInterval = setInterval(() => { this.now = new Date(); this.cdr.markForCheck(); }, 1000);
-    }
-    ngOnDestroy(): void { clearInterval(this.clockInterval); }
+	ngOnInit(): void {
+		this.clockInterval = setInterval(() => {
+			this.now = new Date();
+			this.cdr.markForCheck();
+		}, 1000);
+	}
+	ngOnDestroy(): void {
+		clearInterval(this.clockInterval);
+	}
 
-    openTree(tree: FamilyTree): void { this.router.navigate(['/tree', tree.id]); }
+	openTree(tree: FamilyTree): void {
+		this.router.navigate(["/tree", tree.id]);
+	}
 
-    openNewTree(): void {
-        this.dialog.open(NewTreeDialogComponent, { width: '440px' })
-            .afterClosed().pipe(filter(Boolean))
-            .subscribe(async ({ name, description }) => {
-                const tree = await this.treeService.createTree(name, description);
-                this.snack.open(`tree "${tree.name}" initialized`, 'open', { duration: 4000 })
-                    .onAction().subscribe(() => this.openTree(tree));
-                this.cdr.markForCheck();
-            });
-    }
+	openNewTree(): void {
+		this.dialog
+			.open(NewTreeDialogComponent, { width: "440px" })
+			.afterClosed()
+			.pipe(filter(Boolean))
+			.subscribe(async ({ name, description }) => {
+				const tree = await this.treeService.createTree(name, description);
+				this.snack
+					.open(`tree "${tree.name}" initialized`, "open", { duration: 4000 })
+					.onAction()
+					.subscribe(() => this.openTree(tree));
+				this.cdr.markForCheck();
+			});
+	}
 
-    async duplicateTree(tree: FamilyTree): Promise<void> {
-        const copy = await this.treeService.duplicateTree(tree.id);
-        if (copy) this.snack.open(`duplicated → "${copy.name}"`, '', { duration: 3000 });
-        this.cdr.markForCheck();
-    }
+	async duplicateTree(tree: FamilyTree): Promise<void> {
+		const copy = await this.treeService.duplicateTree(tree.id);
+		if (copy)
+			this.snack.open(`duplicated → "${copy.name}"`, "", { duration: 3000 });
+		this.cdr.markForCheck();
+	}
 
-    async deleteTree(tree: FamilyTree): Promise<void> {
-        if (!confirm(`delete "${tree.name}"? this action cannot be undone.`)) return;
-        await this.treeService.deleteTree(tree.id);
-        this.snack.open('tree deleted', '', { duration: 2500 });
-        this.cdr.markForCheck();
-    }
+	async deleteTree(tree: FamilyTree): Promise<void> {
+		if (!confirm(`delete "${tree.name}"? this action cannot be undone.`))
+			return;
+		await this.treeService.deleteTree(tree.id);
+		this.snack.open("tree deleted", "", { duration: 2500 });
+		this.cdr.markForCheck();
+	}
 
-    exportJSON(tree: FamilyTree): void { this.exportService.downloadJSON(tree); }
+	exportJSON(tree: FamilyTree): void {
+		this.exportService.downloadJSON(tree);
+	}
 
-    openImport(): void {
-        this.dialog.open(ImportDialogComponent, { width: '420px' })
-            .afterClosed().pipe(filter(Boolean))
-            .subscribe(async (file: File) => {
-                const tree = await this.exportService.importJSON(file);
-                if (!tree) { this.snack.open('error: invalid json file', '', { duration: 3000 }); return; }
-                tree.id = crypto.randomUUID();
-                tree.permissions = {
-                    ownerToken: Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join(''),
-                    isPublicRead: false, editorTokens: [],
-                };
-                await this.storage.saveTree(tree);
-                this.snack.open(`imported "${tree.name}"`, 'open', { duration: 4000 })
-                    .onAction().subscribe(() => this.openTree(tree));
-                this.cdr.markForCheck();
-            });
-    }
+	openImport(): void {
+		this.dialog
+			.open(ImportDialogComponent, { width: "420px" })
+			.afterClosed()
+			.pipe(filter(Boolean))
+			.subscribe(async (file: File) => {
+				const tree = await this.exportService.importJSON(file);
+				if (!tree) {
+					this.snack.open("error: invalid json file", "", { duration: 3000 });
+					return;
+				}
+				tree.id = crypto.randomUUID();
+				tree.permissions = {
+					ownerToken: Array.from(
+						crypto.getRandomValues(new Uint8Array(16)),
+						(b) => b.toString(16).padStart(2, "0"),
+					).join(""),
+					isPublicRead: false,
+					editorTokens: [],
+				};
+				await this.storage.saveTree(tree);
+				this.snack
+					.open(`imported "${tree.name}"`, "open", { duration: 4000 })
+					.onAction()
+					.subscribe(() => this.openTree(tree));
+				this.cdr.markForCheck();
+			});
+	}
 }

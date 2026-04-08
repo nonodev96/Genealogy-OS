@@ -1,28 +1,47 @@
-import { Component, Inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatButtonModule } from '@angular/material/button';
-import { MatSelectModule } from '@angular/material/select';
-import { MatIconModule } from '@angular/material/icon';
-import { TranslatePipe } from '@ngx-translate/core';
-import { Person } from '../../../core/models';
-import { StorageService } from '../../../core/services/storage.service';
+import { CommonModule } from "@angular/common";
+import { Component, inject, type OnInit } from "@angular/core";
+import {
+	FormBuilder,
+	type FormGroup,
+	ReactiveFormsModule,
+	Validators,
+} from "@angular/forms";
+import { MatButtonModule } from "@angular/material/button";
+import { MatDatepickerModule } from "@angular/material/datepicker";
+import {
+	MAT_DIALOG_DATA,
+	MatDialogModule,
+	MatDialogRef,
+} from "@angular/material/dialog";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatSelectModule } from "@angular/material/select";
+import { TranslatePipe } from "@ngx-translate/core";
+import type { Person } from "../../../core/models";
+import { StorageService } from "../../../core/services/storage.service";
 
-export interface PersonFormData { person?: Person; treeId: string; }
+export interface PersonFormData {
+	person?: Person;
+	treeId: string;
+}
 
 @Component({
-  selector: 'app-person-form',
-  standalone: true,
-  imports: [
-    CommonModule, ReactiveFormsModule, MatDialogModule,
-    MatFormFieldModule, MatInputModule, MatDatepickerModule, MatButtonModule,
-    MatSelectModule, MatIconModule, TranslatePipe,
-  ],
-  template: `
+	selector: "app-person-form",
+	standalone: true,
+	imports: [
+		CommonModule,
+		ReactiveFormsModule,
+		MatDialogModule,
+		MatFormFieldModule,
+		MatInputModule,
+		MatDatepickerModule,
+		MatButtonModule,
+		MatSelectModule,
+		MatIconModule,
+		TranslatePipe,
+	],
+	template: `
     <h2 mat-dialog-title>
       <span class="marker">//</span>
       {{ (isEdit ? 'PERSON.FORM.TITLE_EDIT' : 'PERSON.FORM.TITLE_ADD') | translate }}
@@ -105,7 +124,8 @@ export interface PersonFormData { person?: Person; treeId: string; }
       </button>
     </mat-dialog-actions>
   `,
-  styles: [`
+	styles: [
+		`
     .marker { color:var(--red); margin-right:8px; font-family:var(--font-mono); }
     .form-grid { display:flex; flex-wrap:wrap; gap:12px; padding:14px 0; }
     .full  { width:100%; }
@@ -141,53 +161,63 @@ export interface PersonFormData { person?: Person; treeId: string; }
     .avatar-overlay mat-icon { color:var(--red) !important; }
     .avatar-zone:hover .avatar-overlay { opacity:1; }
     .photo-actions { display:flex; flex-direction:column; gap:4px; }
-  `],
+  `,
+	],
 })
 export class PersonFormComponent implements OnInit {
-  form!: FormGroup;
-  previewUrl: string | null = null;
-  isEdit = false;
+	private fb = inject(FormBuilder);
+	private storage = inject(StorageService);
+	private dialogRef = inject(MatDialogRef<PersonFormComponent>);
+	data = inject<PersonFormData>(MAT_DIALOG_DATA);
 
-  constructor(
-    private fb: FormBuilder,
-    private storage: StorageService,
-    private dialogRef: MatDialogRef<PersonFormComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: PersonFormData,
-  ) { }
+	form!: FormGroup;
+	previewUrl: string | null = null;
+	isEdit = false;
 
-  ngOnInit(): void {
-    this.isEdit = !!this.data.person;
-    const p = this.data.person;
-    this.form = this.fb.group({
-      name: [p?.name ?? '', [Validators.required, Validators.minLength(2)]],
-      gender: [p?.gender ?? 'unknown'],
-      birthDate: [p?.birthDate ? new Date(p.birthDate) : null],
-      deathDate: [p?.deathDate ? new Date(p.deathDate) : null],
-      notes: [p?.notes ?? ''],
-    });
-    if (p?.photoUrl) this.previewUrl = p.photoUrl;
-  }
+	ngOnInit(): void {
+		this.isEdit = !!this.data.person;
+		const p = this.data.person;
+		this.form = this.fb.group({
+			name: [p?.name ?? "", [Validators.required, Validators.minLength(2)]],
+			gender: [p?.gender ?? "unknown"],
+			birthDate: [p?.birthDate ? new Date(p.birthDate) : null],
+			deathDate: [p?.deathDate ? new Date(p.deathDate) : null],
+			notes: [p?.notes ?? ""],
+		});
+		if (p?.photoUrl) this.previewUrl = p.photoUrl;
+	}
 
-  async onPhotoChange(event: Event): Promise<void> {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { alert('max 2 MB'); return; }
-    this.previewUrl = await this.storage.fileToBase64(file);
-  }
+	async onPhotoChange(event: Event): Promise<void> {
+		const file = (event.target as HTMLInputElement).files?.[0];
+		if (!file) return;
+		if (file.size > 2 * 1024 * 1024) {
+			alert("max 2 MB");
+			return;
+		}
+		this.previewUrl = await this.storage.fileToBase64(file);
+	}
 
-  clearPhoto(): void { this.previewUrl = null; }
-  onCancel(): void { this.dialogRef.close(null); }
+	clearPhoto(): void {
+		this.previewUrl = null;
+	}
+	onCancel(): void {
+		this.dialogRef.close(null);
+	}
 
-  onSave(): void {
-    if (this.form.invalid) return;
-    const v = this.form.value;
-    this.dialogRef.close({
-      name: v.name.trim(),
-      gender: v.gender,
-      birthDate: v.birthDate ? (v.birthDate as Date).toISOString().split('T')[0] : undefined,
-      deathDate: v.deathDate ? (v.deathDate as Date).toISOString().split('T')[0] : undefined,
-      notes: v.notes || undefined,
-      photoUrl: this.previewUrl || undefined,
-    });
-  }
+	onSave(): void {
+		if (this.form.invalid) return;
+		const v = this.form.value;
+		this.dialogRef.close({
+			name: v.name.trim(),
+			gender: v.gender,
+			birthDate: v.birthDate
+				? (v.birthDate as Date).toISOString().split("T")[0]
+				: undefined,
+			deathDate: v.deathDate
+				? (v.deathDate as Date).toISOString().split("T")[0]
+				: undefined,
+			notes: v.notes || undefined,
+			photoUrl: this.previewUrl || undefined,
+		});
+	}
 }
