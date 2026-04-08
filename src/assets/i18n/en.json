@@ -128,7 +128,8 @@
       "SHARE_TOOLTIP": "generate collaboration link",
       "STATUS_LIVE": "live",
       "UNDO": "undo (Ctrl+Z)",
-      "REDO": "redo (Ctrl+Shift+Z)"
+      "REDO": "redo (Ctrl+Shift+Z)",
+      "TOGGLE_SIDEBAR": "toggle sidebar"
     },
     "TABS": {
       "PERSONS": "persons",

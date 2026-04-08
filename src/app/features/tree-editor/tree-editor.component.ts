@@ -14,6 +14,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTabsModule } from '@angular/material/tabs';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Subscription, fromEvent } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
@@ -43,6 +44,9 @@ import { RelationFormComponent, RelationFormData } from './relation-form/relatio
 
       <!-- Top bar -->
       <header class="editor-header">
+        <button class="menu-btn" (click)="sidenavOpen = !sidenavOpen" [matTooltip]="'TREE_EDITOR.HEADER.TOGGLE_SIDEBAR' | translate" aria-label="Toggle sidebar">
+          <mat-icon>menu</mat-icon>
+        </button>
         <button class="back-btn" routerLink="/dashboard" [matTooltip]="'TREE_EDITOR.HEADER.BACK' | translate">
           <span>←</span>
         </button>
@@ -77,7 +81,7 @@ import { RelationFormComponent, RelationFormData } from './relation-form/relatio
       <mat-sidenav-container class="editor-body">
 
         <!-- Sidebar -->
-        <mat-sidenav mode="side" opened class="sidebar">
+        <mat-sidenav [mode]="isMobile ? 'over' : 'side'" [opened]="sidenavOpen" (openedChange)="sidenavOpen = $event" class="sidebar">
           <mat-tab-group animationDuration="100ms">
 
             <!-- Persons -->
@@ -342,6 +346,29 @@ import { RelationFormComponent, RelationFormData } from './relation-form/relatio
 
     .danger-item { color:var(--red) !important; }
     .danger-item mat-icon { color:var(--red) !important; }
+
+    /* Sidebar toggle button */
+    .menu-btn {
+      background:transparent; border:1px solid var(--border-dim);
+      color:var(--text-secondary); border-radius:var(--radius-sm);
+      cursor:crosshair; display:flex; align-items:center; justify-content:center;
+      width:28px; height:28px; flex-shrink:0; transition:all var(--t);
+      padding:0;
+    }
+    .menu-btn mat-icon { font-size:16px !important; width:16px !important; height:16px !important; }
+    .menu-btn:hover { border-color:var(--border-mid); color:var(--text-primary); }
+
+    /* Responsive */
+    @media (max-width:640px) {
+      .editor-header { padding:0 8px; gap:4px; height:48px; }
+      .header-breadcrumb .bc-root,
+      .header-breadcrumb .bc-sep { display:none; }
+      .header-status { display:none; }
+      .hdr-btn span { display:none; }
+      .hdr-btn { padding:4px 6px; }
+      .back-btn { padding:4px 6px; }
+      .tab-pane { height:calc(100vh - 48px - 48px); }
+    }
   `],
 })
 export class TreeEditorComponent implements OnInit, OnDestroy {
@@ -349,6 +376,10 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 
   private translate = inject(TranslateService);
   private historyService = inject(HistoryService);
+  private breakpointObserver = inject(BreakpointObserver);
+
+  isMobile = false;
+  sidenavOpen = true;
 
   tree: FamilyTree | null = null;
   layout: TreeLayout | null = null;
@@ -369,6 +400,16 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.subs.add(
+      this.breakpointObserver.observe([Breakpoints.XSmall, Breakpoints.Small])
+        .subscribe(state => {
+          this.isMobile = state.matches;
+          if (!this.isMobile) this.sidenavOpen = true;
+          else this.sidenavOpen = false;
+          this.cdr.markForCheck();
+        })
+    );
+
     const treeId = this.route.snapshot.paramMap.get('id') ?? '';
     this.treeService.setActiveTree(treeId);
     this.subs.add(
