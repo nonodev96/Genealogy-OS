@@ -5,7 +5,7 @@ import { TreeLayoutService, NODE_W, NODE_H } from './tree-layout.service';
 @Injectable({ providedIn: 'root' })
 export class ExportService {
 
-  constructor(private layoutService: TreeLayoutService) {}
+  constructor(private layoutService: TreeLayoutService) { }
 
   // ─────────────────────────────────────────────
   //  SVG EXPORT
@@ -17,12 +17,37 @@ export class ExportService {
    */
   exportSVG(tree: FamilyTree, svgElement?: SVGSVGElement): string {
     if (svgElement) {
-      // Clone the live SVG from the canvas component
+      const PAD = 40;
+
+      // Get content bounds from the live zoom-layer (in layout coordinates, before zoom transform)
+      const liveG = svgElement.querySelector('g.zoom-layer') as SVGGElement | null;
+      let vx = 0, vy = 0, vw = 800, vh = 600;
+      if (liveG) {
+        try {
+          const bbox = liveG.getBBox();
+          if (bbox.width > 0 && bbox.height > 0) {
+            vx = bbox.x - PAD;
+            vy = bbox.y - PAD;
+            vw = bbox.width + PAD * 2;
+            vh = bbox.height + PAD * 2;
+          }
+        } catch {
+          console.warn('Failed to get SVG bounds, using default size');
+        }
+      }
+
       const clone = svgElement.cloneNode(true) as SVGSVGElement;
-      // Reset any pan/zoom transforms applied to the root group
+
+      // Remove zoom/pan transform so content is at its layout coordinates
       const g = clone.querySelector('g.zoom-layer') as SVGGElement | null;
-      if (g) g.setAttribute('transform', 'translate(20,20)');
+      if (g) g.removeAttribute('transform');
+
+      // Set explicit dimensions and viewBox so the SVG is self-contained
       clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      clone.setAttribute('width', String(vw));
+      clone.setAttribute('height', String(vh));
+      clone.setAttribute('viewBox', `${vx} ${vy} ${vw} ${vh}`);
+
       return '<?xml version="1.0" encoding="UTF-8"?>\n' + clone.outerHTML;
     }
 
@@ -33,8 +58,8 @@ export class ExportService {
   private buildSVGFromScratch(tree: FamilyTree): string {
     const layout = this.layoutService.computeLayout(tree.persons, tree.relations);
     const PAD = 40;
-    const W   = layout.width  + PAD * 2;
-    const H   = layout.height + PAD * 2;
+    const W = layout.width + PAD * 2;
+    const H = layout.height + PAD * 2;
 
     const lines: string[] = [
       `<?xml version="1.0" encoding="UTF-8"?>`,
@@ -60,13 +85,13 @@ export class ExportService {
       const cls = TreeLayoutService.isDashed(e.type)
         ? 'edge partner-edge'
         : e.type === 'partnerOf' ? 'edge partner-edge'
-        : e.type === 'siblingOf' ? 'edge sibling-edge'
-        : 'edge parent-edge';
+          : e.type === 'siblingOf' ? 'edge sibling-edge'
+            : 'edge parent-edge';
 
       const x1 = e.x1 + PAD, y1 = e.y1 + PAD;
       const x2 = e.x2 + PAD, y2 = e.y2 + PAD;
-      const mx  = (x1 + x2) / 2;
-      const my  = (y1 + y2) / 2;
+      const mx = (x1 + x2) / 2;
+      const my = (y1 + y2) / 2;
 
       lines.push(`<path class="${cls}" d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}"/>`);
       lines.push(`<text x="${mx}" y="${my - 4}" font-size="9" fill="#888" text-anchor="middle">${TreeLayoutService.label(e.type)}</text>`);
@@ -116,12 +141,12 @@ export class ExportService {
     tree.persons.forEach(person => {
       lines.push(person.name);
       if (person.birthDate) lines.push(`  Nacimiento: ${person.birthDate}`);
-      if (person.deathDate)  lines.push(`  Fallecimiento: ${person.deathDate}`);
+      if (person.deathDate) lines.push(`  Fallecimiento: ${person.deathDate}`);
 
       const rels = tree.relations.filter(r => r.from === person.id || r.to === person.id);
       rels.forEach(rel => {
         const otherId = rel.from === person.id ? rel.to : rel.from;
-        const other   = personMap.get(otherId);
+        const other = personMap.get(otherId);
         if (!other) return;
 
         let type: RelationType = rel.type;
@@ -163,7 +188,10 @@ export class ExportService {
         try {
           const tree = JSON.parse(reader.result as string) as FamilyTree;
           resolve(tree);
-        } catch { resolve(null); }
+        } catch {
+          console.error('Failed to parse JSON file');
+          resolve(null);
+        }
       };
       reader.readAsText(file);
     });
@@ -175,15 +203,15 @@ export class ExportService {
 
   private download(filename: string, content: string, mime: string): void {
     const blob = new Blob([content], { type: mime });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   }
 
   private escXML(s: string): string {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 }

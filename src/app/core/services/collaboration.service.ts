@@ -11,7 +11,7 @@ export class CollaborationService {
   constructor(
     private storage: StorageService,
     private treeService: TreeService,
-  ) {}
+  ) { }
 
   // ── Session management ────────────────────────
 
@@ -31,7 +31,10 @@ export class CollaborationService {
     try {
       const raw = localStorage.getItem(SESSION_KEY);
       return raw ? JSON.parse(raw) : {};
-    } catch { return {}; }
+    } catch {
+      console.error('Failed to load collaboration sessions from localStorage');
+      return {};
+    }
   }
 
   // ── Collaboration token for a tree ────────────
@@ -75,7 +78,7 @@ export class CollaborationService {
     try {
       const parsed = new URL(url);
       const treeId = parsed.searchParams.get('tree');
-      const token  = parsed.searchParams.get('token');
+      const token = parsed.searchParams.get('token');
       if (!treeId || !token) return null;
       return this.resolveToken(treeId, token);
     } catch { return null; }

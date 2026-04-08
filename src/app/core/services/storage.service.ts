@@ -158,6 +158,7 @@ export class StorageService implements OnDestroy {
       const raw = localStorage.getItem(LS_KEY);
       return raw ? JSON.parse(raw) : [];
     } catch {
+      console.error('Failed to load from localStorage');
       return [];
     }
   }
@@ -190,7 +191,9 @@ export class StorageService implements OnDestroy {
       const idx = current.findIndex(t => t.id === msg.treeId);
       if (idx >= 0) { current[idx] = updated; } else { current.push(updated); }
       this._trees$.next(current);
-    } catch { /* ignore – other tab may have deleted it */ }
+    } catch { 
+      console.error('Failed to sync tree from other tab');
+    }
   }
 
   // ── Photo helper ──────────────────────────────
