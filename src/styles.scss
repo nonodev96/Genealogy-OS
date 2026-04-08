@@ -1,1 +1,422 @@
-/* You can add global styles to this file, and also import other style files */
+/* ─────────────────────────────────────────────────────────
+   NOTHING STYLE — Global Theme
+   Dark · Dot-matrix · Retro-futuristic · Monochrome + Red
+   ───────────────────────────────────────────────────────── */
+
+@use '@angular/material' as mat;
+
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+
+@include mat.core();
+
+$dark-theme: mat.define-theme((color: (theme-type: dark,
+        primary: mat.$azure-palette,
+      ),
+      typography: (plain-family: "'Share Tech Mono', monospace",
+        brand-family: "'Orbitron', monospace",
+      ),
+      density: (scale: -1),
+    ));
+
+html {
+  @include mat.all-component-themes($dark-theme);
+}
+
+/* ── CSS Variables ───────────────────────────────────── */
+:root {
+  --bg-void: #020202;
+  --bg-surface: #0c0c0c;
+  --bg-elevated: #121212;
+  --bg-overlay: rgba(255, 255, 255, 0.03);
+  --text-primary: #f0f0f0;
+  --text-secondary: #888888;
+  --text-muted: #444444;
+  --text-accent: #ff3333;
+  --border-dim: rgba(255, 255, 255, 0.07);
+  --border-mid: rgba(255, 255, 255, 0.14);
+  --border-bright: rgba(255, 255, 255, 0.30);
+  --border-accent: rgba(255, 51, 51, 0.60);
+  --red: #ff3333;
+  --red-dim: rgba(255, 51, 51, 0.12);
+  --red-glow: 0 0 16px rgba(255, 51, 51, 0.35);
+  --white-glow: 0 0 10px rgba(255, 255, 255, 0.08);
+  --font-display: 'Orbitron', monospace;
+  --font-mono: 'Share Tech Mono', monospace;
+  --font-body: 'Space Mono', monospace;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --t: 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  --t-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  cursor: crosshair;
+}
+
+.dot-grid {
+  background-color: var(--bg-void);
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-void);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-mid);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--red);
+}
+
+/* ── Material Overrides ───────────────────────────────── */
+.mat-mdc-dialog-container .mdc-dialog__surface {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border-mid) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: 0 0 60px rgba(0, 0, 0, .9), 0 0 20px rgba(255, 51, 51, .05) !important;
+}
+
+.mdc-text-field {
+  background: var(--bg-overlay) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.mdc-text-field--outlined .mdc-notched-outline__leading,
+.mdc-text-field--outlined .mdc-notched-outline__notch,
+.mdc-text-field--outlined .mdc-notched-outline__trailing {
+  border-color: var(--border-mid) !important;
+}
+
+.mdc-text-field--focused .mdc-notched-outline__leading,
+.mdc-text-field--focused .mdc-notched-outline__notch,
+.mdc-text-field--focused .mdc-notched-outline__trailing {
+  border-color: var(--red) !important;
+  box-shadow: 0 0 8px rgba(255, 51, 51, 0.2);
+}
+
+.mdc-floating-label,
+mat-label {
+  color: var(--text-muted) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.mat-mdc-input-element,
+textarea {
+  color: var(--text-primary) !important;
+  font-family: var(--font-mono) !important;
+  caret-color: var(--red) !important;
+}
+
+.mat-mdc-select-value-text {
+  color: var(--text-primary) !important;
+  font-family: var(--font-mono) !important;
+}
+
+.mat-mdc-button,
+.mat-mdc-outlined-button,
+.mat-mdc-icon-button {
+  font-family: var(--font-mono) !important;
+  cursor: crosshair !important;
+}
+
+.mat-mdc-raised-button.mat-primary,
+.mat-mdc-flat-button.mat-primary {
+  background: transparent !important;
+  color: var(--red) !important;
+  border: 1px solid var(--border-accent) !important;
+  border-radius: var(--radius-sm) !important;
+  font-family: var(--font-display) !important;
+  font-size: 9px !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  transition: all var(--t) !important;
+}
+
+.mat-mdc-raised-button.mat-primary:hover,
+.mat-mdc-flat-button.mat-primary:hover {
+  background: var(--red-dim) !important;
+  box-shadow: var(--red-glow) !important;
+}
+
+.mat-mdc-button:not([disabled]),
+.mat-mdc-outlined-button:not([disabled]) {
+  color: var(--text-secondary) !important;
+  font-size: 11px !important;
+}
+
+.mat-sidenav {
+  background: var(--bg-surface) !important;
+  border-right: 1px solid var(--border-dim) !important;
+}
+
+.mat-sidenav-content {
+  background: var(--bg-void) !important;
+}
+
+.mat-drawer-container {
+  background: var(--bg-void) !important;
+}
+
+.mat-mdc-tab .mdc-tab__text-label {
+  color: var(--text-muted) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+.mat-mdc-tab.mdc-tab--active .mdc-tab__text-label {
+  color: var(--text-primary) !important;
+}
+
+.mdc-tab-indicator__content--underline {
+  border-color: var(--red) !important;
+}
+
+.mat-mdc-tab-header {
+  border-bottom: 1px solid var(--border-dim) !important;
+}
+
+.mat-mdc-menu-panel {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border-mid) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8) !important;
+}
+
+.mat-mdc-menu-item {
+  color: var(--text-secondary) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  cursor: crosshair !important;
+  letter-spacing: 0.04em !important;
+}
+
+.mat-mdc-menu-item:hover {
+  background: var(--bg-overlay) !important;
+  color: var(--text-primary) !important;
+}
+
+.mat-mdc-menu-item mat-icon {
+  color: var(--text-muted) !important;
+}
+
+.mat-mdc-snack-bar-container {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border-mid) !important;
+  border-left: 2px solid var(--red) !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font-mono) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.mat-mdc-snack-bar-label {
+  font-size: 11px !important;
+  letter-spacing: 0.04em !important;
+}
+
+.mat-mdc-dialog-title {
+  color: var(--text-primary) !important;
+  font-family: var(--font-display) !important;
+  font-size: 12px !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase !important;
+  padding-bottom: 4px !important;
+}
+
+.mat-mdc-dialog-actions {
+  border-top: 1px solid var(--border-dim) !important;
+  padding: 12px 16px !important;
+  gap: 8px !important;
+}
+
+.mat-mdc-list-item {
+  cursor: crosshair !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.mat-mdc-list-item:hover {
+  background: var(--bg-overlay) !important;
+}
+
+.mat-mdc-select-panel {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border-mid) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+.mat-mdc-option {
+  color: var(--text-secondary) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  cursor: crosshair !important;
+}
+
+.mat-mdc-option:hover {
+  background: var(--bg-overlay) !important;
+  color: var(--text-primary) !important;
+}
+
+.mat-mdc-option.mdc-list-item--selected {
+  color: var(--red) !important;
+}
+
+.mat-mdc-optgroup-label {
+  color: var(--text-muted) !important;
+  font-family: var(--font-display) !important;
+  font-size: 9px !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+}
+
+.mat-mdc-chip {
+  background: transparent !important;
+  border: 1px solid var(--border-dim) !important;
+  color: var(--text-secondary) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  border-radius: var(--radius-sm) !important;
+  letter-spacing: 0.04em !important;
+}
+
+.mat-divider {
+  border-color: var(--border-dim) !important;
+}
+
+.mat-icon {
+  cursor: crosshair !important;
+}
+
+.mat-mdc-tooltip {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border-mid) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+/* ── Utility atoms ────────────────────────────────────── */
+.red-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 6px var(--red);
+  animation: pulse-dot 2.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pulse-dot {
+
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 6px var(--red);
+  }
+
+  50% {
+    opacity: .3;
+    box-shadow: 0 0 2px var(--red);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stagger>* {
+  animation: fade-up .35s ease both;
+}
+
+.stagger>*:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.stagger>*:nth-child(2) {
+  animation-delay: 55ms;
+}
+
+.stagger>*:nth-child(3) {
+  animation-delay: 110ms;
+}
+
+.stagger>*:nth-child(4) {
+  animation-delay: 165ms;
+}
+
+.stagger>*:nth-child(5) {
+  animation-delay: 220ms;
+}
+
+.stagger>*:nth-child(6) {
+  animation-delay: 275ms;
+}
+
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+::selection {
+  background: rgba(255, 51, 51, 0.2);
+  color: var(--text-primary);
+}
+
+
+// Custom styles for Angular Material select trigger
+
+.mdc-text-field--outlined .mat-mdc-form-field-infix,
+.mdc-text-field--no-label .mat-mdc-form-field-infix {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  min-height: 0 !important;
+}
+
+.mat-mdc-form-field-infix {
+  min-height: 16px !important;
+}

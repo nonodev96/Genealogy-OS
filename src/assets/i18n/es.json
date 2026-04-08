@@ -1,0 +1,178 @@
+{
+  "COMMON": {
+    "CANCEL": "Cancelar",
+    "SAVE": "Guardar cambios",
+    "CREATE": "Crear",
+    "IMPORT": "Importar",
+    "REMOVE": "Eliminar",
+    "REQUIRED": "Campo requerido",
+    "NOTES": "Notas"
+  },
+  "PERSON": {
+    "FORM": {
+      "TITLE_ADD": "add_node",
+      "TITLE_EDIT": "edit_node",
+      "NAME": "nombre_completo *",
+      "GENDER": "género",
+      "BIRTH_DATE": "fecha_nacimiento",
+      "DEATH_DATE": "fecha_defunción",
+      "BIO_NOTES": "notas_biográficas",
+      "UPLOAD": "click para subir",
+      "NOTES_PLACEHOLDER": "notas biográficas opcionales…"
+    },
+    "GENDER": {
+      "MALE": "masculino",
+      "FEMALE": "femenino",
+      "OTHER": "otro",
+      "UNKNOWN": "sin especificar"
+    }
+  },
+  "RELATION": {
+    "FORM": {
+      "TITLE_ADD": "add_edge",
+      "TITLE_EDIT": "edit_edge",
+      "FROM": "nodo_origen *",
+      "TYPE": "tipo_relación *",
+      "TO": "nodo_destino *",
+      "START_DATE": "fecha_inicio",
+      "END_DATE": "fecha_fin",
+      "NOTES_PLACEHOLDER": "anotación de arista opcional…"
+    },
+    "GROUP": {
+      "FILIATION": "filiación",
+      "PARTNER": "pareja",
+      "SIBLING": "hermandad",
+      "LINEAGE": "linaje"
+    },
+    "TYPE": {
+      "PARENTOF": "padre/madre de",
+      "CHILDOF": "hijo/a de",
+      "ADOPTIVEPARENTOF": "padre/madre adoptivo/a de",
+      "ADOPTIVECHILDOF": "hijo/a adoptivo/a de",
+      "STEPPARENTOF": "padrastro/madrastra de",
+      "STEPCHILDOF": "hijastro/a de",
+      "GUARDIANOF": "tutor/a de",
+      "WARDOF": "pupilo/a de",
+      "PARTNEROF": "pareja de",
+      "SIBLINGOF": "hermano/a de",
+      "HALFSIBLINGOF": "medio hermano/a de",
+      "ANCESTOROF": "ancestro de",
+      "DESCENDANTOF": "descendiente de"
+    }
+  },
+  "TREE": {
+    "NEW_DIALOG": {
+      "TITLE": "new_tree",
+      "IDENTIFIER": "identificador",
+      "DESCRIPTION": "descripción",
+      "PLACEHOLDER_ID": "familia_garcia_2025",
+      "PLACEHOLDER_DESC": "notas opcionales…",
+      "REQUIRED": "campo requerido"
+    },
+    "IMPORT_DIALOG": {
+      "TITLE": "import_json",
+      "DRAG": "click o arrastra .json",
+      "HINT": "archivo de respaldo genealógico"
+    },
+    "CARD": {
+      "PERSONS": "personas",
+      "RELATIONS": "relaciones",
+      "MODIFIED": "modificado",
+      "LOCAL": "○ local",
+      "SHARED": "◉ compartido"
+    },
+    "CTX": {
+      "OPEN": "abrir",
+      "DUPLICATE": "duplicar",
+      "EXPORT": "exportar .json",
+      "DELETE": "eliminar"
+    }
+  },
+  "DASHBOARD": {
+    "STATUS": {
+      "READY": "system.ready",
+      "STORAGE": "storage: indexeddb",
+      "TREES": "árboles"
+    },
+    "HEADER": {
+      "IMPORT": "import",
+      "LANGUAGE": "idioma",
+      "IMPORT_TOOLTIP": "Importar copia de seguridad JSON",
+      "NEW_TREE": "new_tree"
+    },
+    "EMPTY": {
+      "TITLE": "no_trees_found",
+      "SUBTITLE": "inicializa tu primer árbol genealógico",
+      "CTA": "initialize_tree"
+    }
+  },
+  "COLLABORATE": {
+    "LOADING": "resolving_token…",
+    "INVALID": {
+      "ERROR": "error: invalid_or_expired_token",
+      "HINT1": "→ solicita un nuevo enlace al propietario del árbol",
+      "HINT2": "→ verifica que la URL no ha sido modificada"
+    },
+    "VALID": {
+      "VERIFIED": "token_verified",
+      "ACCESS": "access_granted. listo para abrir.",
+      "OPEN": "open_tree →"
+    },
+    "DASHBOARD_BTN": "← dashboard"
+  },
+  "TREE_EDITOR": {
+    "HEADER": {
+      "BACK": "dashboard",
+      "SHARE": "compartir",
+      "EXPORT": "exportar",
+      "SHARE_TOOLTIP": "generar enlace de colaboración",
+      "STATUS_LIVE": "live"
+    },
+    "TABS": {
+      "PERSONS": "personas",
+      "RELATIONS": "relaciones",
+      "NODE": "nodo"
+    },
+    "PERSONS": {
+      "ADD": "add_persona",
+      "EMPTY": "sin personas aún",
+      "CTX_EDIT": "editar",
+      "CTX_ADD_REL": "añadir relación",
+      "CTX_DELETE": "eliminar"
+    },
+    "RELATIONS": {
+      "ADD": "add_relación",
+      "CTX_EDIT": "editar",
+      "CTX_DELETE": "eliminar"
+    },
+    "DETAIL": {
+      "BORN": "nacido",
+      "DIED": "fallecido",
+      "RELATIONS": "relaciones",
+      "EDIT": "editar",
+      "LINK": "enlazar"
+    },
+    "SNACK": {
+      "PERSON_ADDED": "nodo «{{name}}» añadido",
+      "PERSON_UPDATED": "nodo actualizado",
+      "PERSON_DELETED": "nodo eliminado",
+      "RELATION_ADDED": "arista añadida",
+      "RELATION_UPDATED": "arista actualizada",
+      "RELATION_DELETED": "arista eliminada",
+      "SHARE_ERROR": "error: no se pudo generar el enlace",
+      "SHARE_COPIED": "enlace copiado al portapapeles"
+    },
+    "LOADING": "cargando_árbol"
+  },
+  "CANVAS": {
+    "ZOOM_IN": "acercar",
+    "ZOOM_OUT": "alejar",
+    "FIT": "ajustar",
+    "CENTER": "centrar",
+    "SCALE": "escala",
+    "NODES": "nodos",
+    "EDGES": "aristas",
+    "EMPTY_TITLE": "no_nodos_renderizados",
+    "EMPTY_SUB": "añade personas y relaciones para visualizar"
+  }
+}

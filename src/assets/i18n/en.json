@@ -1,0 +1,178 @@
+{
+  "COMMON": {
+    "CANCEL": "Cancel",
+    "SAVE": "Save changes",
+    "CREATE": "Create",
+    "IMPORT": "Import",
+    "REMOVE": "Remove",
+    "REQUIRED": "Required field",
+    "NOTES": "Notes"
+  },
+  "PERSON": {
+    "FORM": {
+      "TITLE_ADD": "add_node",
+      "TITLE_EDIT": "edit_node",
+      "NAME": "full_name *",
+      "GENDER": "gender",
+      "BIRTH_DATE": "birth_date",
+      "DEATH_DATE": "death_date",
+      "BIO_NOTES": "biography_notes",
+      "UPLOAD": "click to upload",
+      "NOTES_PLACEHOLDER": "optional biographical notes…"
+    },
+    "GENDER": {
+      "MALE": "male",
+      "FEMALE": "female",
+      "OTHER": "other",
+      "UNKNOWN": "unspecified"
+    }
+  },
+  "RELATION": {
+    "FORM": {
+      "TITLE_ADD": "add_edge",
+      "TITLE_EDIT": "edit_edge",
+      "FROM": "origin_node *",
+      "TYPE": "relation_type *",
+      "TO": "target_node *",
+      "START_DATE": "start_date",
+      "END_DATE": "end_date",
+      "NOTES_PLACEHOLDER": "optional edge annotation…"
+    },
+    "GROUP": {
+      "FILIATION": "filiation",
+      "PARTNER": "partner",
+      "SIBLING": "sibling",
+      "LINEAGE": "lineage"
+    },
+    "TYPE": {
+      "PARENTOF": "parent of",
+      "CHILDOF": "child of",
+      "ADOPTIVEPARENTOF": "adoptive parent of",
+      "ADOPTIVECHILDOF": "adoptive child of",
+      "STEPPARENTOF": "step-parent of",
+      "STEPCHILDOF": "step-child of",
+      "GUARDIANOF": "guardian of",
+      "WARDOF": "ward of",
+      "PARTNEROF": "partner of",
+      "SIBLINGOF": "sibling of",
+      "HALFSIBLINGOF": "half-sibling of",
+      "ANCESTOROF": "ancestor of",
+      "DESCENDANTOF": "descendant of"
+    }
+  },
+  "TREE": {
+    "NEW_DIALOG": {
+      "TITLE": "new_tree",
+      "IDENTIFIER": "identifier",
+      "DESCRIPTION": "description",
+      "PLACEHOLDER_ID": "familia_garcia_2025",
+      "PLACEHOLDER_DESC": "optional notes…",
+      "REQUIRED": "required field"
+    },
+    "IMPORT_DIALOG": {
+      "TITLE": "import_json",
+      "DRAG": "click or drag .json",
+      "HINT": "genealogy backup file"
+    },
+    "CARD": {
+      "PERSONS": "persons",
+      "RELATIONS": "relations",
+      "MODIFIED": "modified",
+      "LOCAL": "○ local",
+      "SHARED": "◉ shared"
+    },
+    "CTX": {
+      "OPEN": "open",
+      "DUPLICATE": "duplicate",
+      "EXPORT": "export .json",
+      "DELETE": "delete"
+    }
+  },
+  "DASHBOARD": {
+    "STATUS": {
+      "READY": "system.ready",
+      "STORAGE": "storage: indexeddb",
+      "TREES": "trees"
+    },
+    "HEADER": {
+      "IMPORT": "import",
+      "LANGUAGE": "language",
+      "IMPORT_TOOLTIP": "Import JSON backup",
+      "NEW_TREE": "new_tree"
+    },
+    "EMPTY": {
+      "TITLE": "no_trees_found",
+      "SUBTITLE": "initialize your first genealogy tree",
+      "CTA": "initialize_tree"
+    }
+  },
+  "COLLABORATE": {
+    "LOADING": "resolving_token…",
+    "INVALID": {
+      "ERROR": "error: invalid_or_expired_token",
+      "HINT1": "→ request a new link from the tree owner",
+      "HINT2": "→ verify the url has not been modified"
+    },
+    "VALID": {
+      "VERIFIED": "token_verified",
+      "ACCESS": "access_granted. ready to open.",
+      "OPEN": "open_tree →"
+    },
+    "DASHBOARD_BTN": "← dashboard"
+  },
+  "TREE_EDITOR": {
+    "HEADER": {
+      "BACK": "dashboard",
+      "SHARE": "share",
+      "EXPORT": "export",
+      "SHARE_TOOLTIP": "generate collaboration link",
+      "STATUS_LIVE": "live"
+    },
+    "TABS": {
+      "PERSONS": "persons",
+      "RELATIONS": "relations",
+      "NODE": "node"
+    },
+    "PERSONS": {
+      "ADD": "add_person",
+      "EMPTY": "no persons yet",
+      "CTX_EDIT": "edit",
+      "CTX_ADD_REL": "add relation",
+      "CTX_DELETE": "delete"
+    },
+    "RELATIONS": {
+      "ADD": "add_relation",
+      "CTX_EDIT": "edit",
+      "CTX_DELETE": "delete"
+    },
+    "DETAIL": {
+      "BORN": "born",
+      "DIED": "died",
+      "RELATIONS": "relations",
+      "EDIT": "edit",
+      "LINK": "link"
+    },
+    "SNACK": {
+      "PERSON_ADDED": "node \u00ab{{name}}\u00bb added",
+      "PERSON_UPDATED": "node updated",
+      "PERSON_DELETED": "node deleted",
+      "RELATION_ADDED": "edge added",
+      "RELATION_UPDATED": "edge updated",
+      "RELATION_DELETED": "edge deleted",
+      "SHARE_ERROR": "error: could not generate link",
+      "SHARE_COPIED": "link copied to clipboard"
+    },
+    "LOADING": "loading_tree"
+  },
+  "CANVAS": {
+    "ZOOM_IN": "zoom in",
+    "ZOOM_OUT": "zoom out",
+    "FIT": "fit",
+    "CENTER": "center",
+    "SCALE": "scale",
+    "NODES": "nodes",
+    "EDGES": "edges",
+    "EMPTY_TITLE": "no_nodes_rendered",
+    "EMPTY_SUB": "add persons and relations to visualize"
+  }
+}
