@@ -13,38 +13,38 @@ import { Person, Relation, RelationType } from '../../../core/models';
 import { TreeLayoutService } from '../../../core/services/tree-layout.service';
 
 export interface RelationFormData {
-    relation?: Relation;
-    persons: Person[];
-    preselectedFrom?: string;
+  relation?: Relation;
+  persons: Person[];
+  preselectedFrom?: string;
 }
 
 interface RelOption { value: RelationType; label: string; group: string; }
 
 const OPTIONS: RelOption[] = [
-    { value: 'parentOf', label: 'parentOf', group: 'filiation' },
-    { value: 'childOf', label: 'childOf', group: 'filiation' },
-    { value: 'adoptiveParentOf', label: 'adoptiveParentOf', group: 'filiation' },
-    { value: 'adoptiveChildOf', label: 'adoptiveChildOf', group: 'filiation' },
-    { value: 'stepParentOf', label: 'stepParentOf', group: 'filiation' },
-    { value: 'stepChildOf', label: 'stepChildOf', group: 'filiation' },
-    { value: 'guardianOf', label: 'guardianOf', group: 'filiation' },
-    { value: 'wardOf', label: 'wardOf', group: 'filiation' },
-    { value: 'partnerOf', label: 'partnerOf', group: 'partner' },
-    { value: 'siblingOf', label: 'siblingOf', group: 'sibling' },
-    { value: 'halfSiblingOf', label: 'halfSiblingOf', group: 'sibling' },
-    { value: 'ancestorOf', label: 'ancestorOf', group: 'lineage' },
-    { value: 'descendantOf', label: 'descendantOf', group: 'lineage' },
+  { value: 'parentOf', label: 'parentOf', group: 'filiation' },
+  { value: 'childOf', label: 'childOf', group: 'filiation' },
+  { value: 'adoptiveParentOf', label: 'adoptiveParentOf', group: 'filiation' },
+  { value: 'adoptiveChildOf', label: 'adoptiveChildOf', group: 'filiation' },
+  { value: 'stepParentOf', label: 'stepParentOf', group: 'filiation' },
+  { value: 'stepChildOf', label: 'stepChildOf', group: 'filiation' },
+  { value: 'guardianOf', label: 'guardianOf', group: 'filiation' },
+  { value: 'wardOf', label: 'wardOf', group: 'filiation' },
+  { value: 'partnerOf', label: 'partnerOf', group: 'partner' },
+  { value: 'siblingOf', label: 'siblingOf', group: 'sibling' },
+  { value: 'halfSiblingOf', label: 'halfSiblingOf', group: 'sibling' },
+  { value: 'ancestorOf', label: 'ancestorOf', group: 'lineage' },
+  { value: 'descendantOf', label: 'descendantOf', group: 'lineage' },
 ];
 
 @Component({
-    selector: 'app-relation-form',
-    standalone: true,
-    imports: [
-        CommonModule, ReactiveFormsModule, MatDialogModule,
-        MatFormFieldModule, MatInputModule, MatDatepickerModule, MatButtonModule,
-        MatSelectModule, MatIconModule, TranslatePipe,
-    ],
-    template: `
+  selector: 'app-relation-form',
+  standalone: true,
+  imports: [
+    CommonModule, ReactiveFormsModule, MatDialogModule,
+    MatFormFieldModule, MatInputModule, MatDatepickerModule, MatButtonModule,
+    MatSelectModule, MatIconModule, TranslatePipe,
+  ],
+  template: `
     <h2 mat-dialog-title>
       <span class="marker">//</span>
       {{ (isEdit ? 'RELATION.FORM.TITLE_EDIT' : 'RELATION.FORM.TITLE_ADD') | translate }}
@@ -115,11 +115,12 @@ const OPTIONS: RelOption[] = [
       </button>
     </mat-dialog-actions>
   `,
-    styles: [`
+  styles: [`
     .marker { color:var(--red); margin-right:8px; }
-    .form-grid { display:flex; flex-wrap:wrap; gap:12px; padding:14px 0; min-width:420px; }
+    .form-grid { display:flex; flex-wrap:wrap; gap:12px; padding:14px 0; }
     .full { width:100%; }
     .half { width:calc(50% - 6px); }
+    @media (max-width:480px) { .half { width:100%; } }
 
     .edge-preview {
       width:100%; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
@@ -133,44 +134,44 @@ const OPTIONS: RelOption[] = [
   `],
 })
 export class RelationFormComponent implements OnInit {
-    form!: FormGroup;
-    isEdit = false;
-    groups: { name: string; options: RelOption[] }[] = [];
+  form!: FormGroup;
+  isEdit = false;
+  groups: { name: string; options: RelOption[] }[] = [];
 
-    constructor(
-        private fb: FormBuilder,
-        private dialogRef: MatDialogRef<RelationFormComponent>,
-        @Inject(MAT_DIALOG_DATA) public data: RelationFormData,
-    ) { }
+  constructor(
+    private fb: FormBuilder,
+    private dialogRef: MatDialogRef<RelationFormComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: RelationFormData,
+  ) { }
 
-    ngOnInit(): void {
-        this.isEdit = !!this.data.relation;
-        const r = this.data.relation;
-        this.form = this.fb.group({
-            from: [r?.from ?? this.data.preselectedFrom ?? '', Validators.required],
-            type: [r?.type ?? '', Validators.required],
-            to: [r?.to ?? '', Validators.required],
-            startDate: [r?.startDate ? new Date(r.startDate) : null],
-            endDate: [r?.endDate ? new Date(r.endDate) : null],
-            notes: [r?.notes ?? ''],
-        });
-        const grpNames = [...new Set(OPTIONS.map(o => o.group))];
-        this.groups = grpNames.map(n => ({ name: n, options: OPTIONS.filter(o => o.group === n) }));
-    }
+  ngOnInit(): void {
+    this.isEdit = !!this.data.relation;
+    const r = this.data.relation;
+    this.form = this.fb.group({
+      from: [r?.from ?? this.data.preselectedFrom ?? '', Validators.required],
+      type: [r?.type ?? '', Validators.required],
+      to: [r?.to ?? '', Validators.required],
+      startDate: [r?.startDate ? new Date(r.startDate) : null],
+      endDate: [r?.endDate ? new Date(r.endDate) : null],
+      notes: [r?.notes ?? ''],
+    });
+    const grpNames = [...new Set(OPTIONS.map(o => o.group))];
+    this.groups = grpNames.map(n => ({ name: n, options: OPTIONS.filter(o => o.group === n) }));
+  }
 
-    get targets(): Person[] { return this.data.persons.filter(p => p.id !== this.form.value.from); }
-    get previewColor(): string { return TreeLayoutService.edgeColor(this.form.value.type); }
-    getName(id: string): string { return this.data.persons.find(p => p.id === id)?.name ?? id; }
-    onCancel(): void { this.dialogRef.close(null); }
+  get targets(): Person[] { return this.data.persons.filter(p => p.id !== this.form.value.from); }
+  get previewColor(): string { return TreeLayoutService.edgeColor(this.form.value.type); }
+  getName(id: string): string { return this.data.persons.find(p => p.id === id)?.name ?? id; }
+  onCancel(): void { this.dialogRef.close(null); }
 
-    onSave(): void {
-        if (this.form.invalid) return;
-        const v = this.form.value;
-        this.dialogRef.close({
-            from: v.from, to: v.to, type: v.type,
-            startDate: v.startDate ? (v.startDate as Date).toISOString().split('T')[0] : undefined,
-            endDate: v.endDate ? (v.endDate as Date).toISOString().split('T')[0] : undefined,
-            notes: v.notes || undefined,
-        });
-    }
+  onSave(): void {
+    if (this.form.invalid) return;
+    const v = this.form.value;
+    this.dialogRef.close({
+      from: v.from, to: v.to, type: v.type,
+      startDate: v.startDate ? (v.startDate as Date).toISOString().split('T')[0] : undefined,
+      endDate: v.endDate ? (v.endDate as Date).toISOString().split('T')[0] : undefined,
+      notes: v.notes || undefined,
+    });
+  }
 }

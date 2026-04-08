@@ -37,18 +37,20 @@ export interface PersonFormData { person?: Person; treeId: string; }
             <img *ngIf="previewUrl" [src]="previewUrl" class="avatar-img"/>
             <div *ngIf="!previewUrl" class="avatar-placeholder">
               <span class="avatar-initial">{{ form.value.name?.charAt(0)?.toUpperCase() || '?' }}</span>
-              <span class="avatar-label">{{ 'PERSON.FORM.UPLOAD' | translate }}</span>
             </div>
             <div class="avatar-overlay">
               <mat-icon>photo_camera</mat-icon>
             </div>
           </div>
-          <input #photoInput type="file" accept="image/*" hidden (change)="onPhotoChange($event)"/>
-          <div class="photo-actions" *ngIf="previewUrl">
-            <button mat-button type="button" (click)="clearPhoto()">
-              <mat-icon>close</mat-icon> {{ 'COMMON.REMOVE' | translate }}
-            </button>
+          <div class="photo-side">
+            <span class="upload-hint">{{ 'PERSON.FORM.UPLOAD' | translate }}</span>
+            <div class="photo-actions" *ngIf="previewUrl">
+              <button mat-button type="button" (click)="clearPhoto()">
+                <mat-icon>close</mat-icon> {{ 'COMMON.REMOVE' | translate }}
+              </button>
+            </div>
           </div>
+          <input #photoInput type="file" accept="image/*" hidden (change)="onPhotoChange($event)"/>
         </div>
 
         <!-- Name -->
@@ -105,9 +107,10 @@ export interface PersonFormData { person?: Person; treeId: string; }
   `,
   styles: [`
     .marker { color:var(--red); margin-right:8px; font-family:var(--font-mono); }
-    .form-grid { display:flex; flex-wrap:wrap; gap:12px; padding:14px 0; min-width:420px; }
+    .form-grid { display:flex; flex-wrap:wrap; gap:12px; padding:14px 0; }
     .full  { width:100%; }
     .half  { width:calc(50% - 6px); }
+    @media (max-width:480px) { .half { width:100%; } }
 
     .photo-area { width:100%; display:flex; align-items:center; gap:14px; }
     .avatar-zone {
@@ -120,11 +123,15 @@ export interface PersonFormData { person?: Person; treeId: string; }
     .avatar-zone:hover, .avatar-zone.has-photo { border-color:var(--border-bright); }
     .avatar-img { width:100%; height:100%; object-fit:cover; }
     .avatar-placeholder {
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      height:100%; gap:4px;
+      display:flex; align-items:center; justify-content:center; height:100%;
     }
     .avatar-initial { font-family:var(--font-display); font-size:22px; color:var(--text-muted); }
-    .avatar-label { font-size:8px; color:var(--text-muted); letter-spacing:0.08em; text-transform:uppercase; }
+    .photo-side { display:flex; flex-direction:column; gap:6px; }
+    .upload-hint {
+      font-size:10px; color:var(--text-secondary);
+      font-family:var(--font-mono); letter-spacing:0.06em;
+      cursor:crosshair;
+    }
     .avatar-overlay {
       position:absolute; inset:0;
       background:rgba(0,0,0,0.5);
@@ -146,17 +153,17 @@ export class PersonFormComponent implements OnInit {
     private storage: StorageService,
     private dialogRef: MatDialogRef<PersonFormComponent>,
     @Inject(MAT_DIALOG_DATA) public data: PersonFormData,
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.isEdit = !!this.data.person;
     const p = this.data.person;
     this.form = this.fb.group({
-      name:      [p?.name      ?? '', [Validators.required, Validators.minLength(2)]],
-      gender:    [p?.gender    ?? 'unknown'],
+      name: [p?.name ?? '', [Validators.required, Validators.minLength(2)]],
+      gender: [p?.gender ?? 'unknown'],
       birthDate: [p?.birthDate ? new Date(p.birthDate) : null],
       deathDate: [p?.deathDate ? new Date(p.deathDate) : null],
-      notes:     [p?.notes     ?? ''],
+      notes: [p?.notes ?? ''],
     });
     if (p?.photoUrl) this.previewUrl = p.photoUrl;
   }
@@ -175,12 +182,12 @@ export class PersonFormComponent implements OnInit {
     if (this.form.invalid) return;
     const v = this.form.value;
     this.dialogRef.close({
-      name:      v.name.trim(),
-      gender:    v.gender,
+      name: v.name.trim(),
+      gender: v.gender,
       birthDate: v.birthDate ? (v.birthDate as Date).toISOString().split('T')[0] : undefined,
       deathDate: v.deathDate ? (v.deathDate as Date).toISOString().split('T')[0] : undefined,
-      notes:     v.notes      || undefined,
-      photoUrl:  this.previewUrl || undefined,
+      notes: v.notes || undefined,
+      photoUrl: this.previewUrl || undefined,
     });
   }
 }

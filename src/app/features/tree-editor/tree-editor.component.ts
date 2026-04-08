@@ -397,7 +397,7 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
     private dialog: MatDialog,
     private snack: MatSnackBar,
     public cdr: ChangeDetectorRef,
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.subs.add(
@@ -414,7 +414,7 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
     this.treeService.setActiveTree(treeId);
     this.subs.add(
       this.treeService.activeTree$.subscribe(tree => {
-        this.tree   = tree ?? null;
+        this.tree = tree ?? null;
         this.layout = tree ? new TreeLayoutService().computeLayout(tree.persons, tree.relations) : null;
         this.cdr.markForCheck();
       })
@@ -476,7 +476,7 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
   }
 
   openAddPerson(): void {
-    this.dialog.open(PersonFormComponent, { data: { treeId: this.tree!.id } satisfies PersonFormData, width: '480px' })
+    this.dialog.open(PersonFormComponent, { data: { treeId: this.tree!.id } satisfies PersonFormData, width: '480px', maxWidth: '95vw' })
       .afterClosed().pipe(filter(Boolean)).subscribe(async (data) => {
         const person = await this.treeService.addPerson(this.tree!.id, data);
         this.snack.open(this.translate.instant('TREE_EDITOR.SNACK.PERSON_ADDED', { name: person.name }), '', { duration: 2500 });
@@ -485,7 +485,7 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 
   openEditPerson(person: Person | undefined): void {
     if (!person) return;
-    this.dialog.open(PersonFormComponent, { data: { person, treeId: this.tree!.id } satisfies PersonFormData, width: '480px' })
+    this.dialog.open(PersonFormComponent, { data: { person, treeId: this.tree!.id } satisfies PersonFormData, width: '480px', maxWidth: '95vw' })
       .afterClosed().pipe(filter(Boolean)).subscribe(async (data) => {
         await this.treeService.updatePerson(this.tree!.id, { ...person, ...data });
         this.snack.open(this.translate.instant('TREE_EDITOR.SNACK.PERSON_UPDATED'), '', { duration: 2000 });
@@ -502,7 +502,7 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
   openAddRelation(fromId?: string): void {
     this.dialog.open(RelationFormComponent, {
       data: { persons: this.tree!.persons, preselectedFrom: fromId } satisfies RelationFormData,
-      width: '480px',
+      width: '480px', maxWidth: '95vw',
     }).afterClosed().pipe(filter(Boolean)).subscribe(async (data) => {
       await this.treeService.addRelation(this.tree!.id, data.from, data.to, data.type,
         { startDate: data.startDate, endDate: data.endDate, notes: data.notes });
@@ -514,6 +514,7 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
     this.dialog.open(RelationFormComponent, {
       data: { relation: rel, persons: this.tree!.persons } satisfies RelationFormData,
       width: '480px',
+      maxWidth: '95vw',
     }).afterClosed().pipe(filter(Boolean)).subscribe(async (data) => {
       await this.treeService.updateRelation(this.tree!.id, { ...rel, ...data });
       this.snack.open(this.translate.instant('TREE_EDITOR.SNACK.RELATION_UPDATED'), '', { duration: 2000 });
@@ -528,13 +529,13 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 
   async shareTree(): Promise<void> {
     const token = this.tree!.permissions.ownerToken;
-    const link  = await this.collab.generateCollaborationLink(this.tree!.id, token);
+    const link = await this.collab.generateCollaborationLink(this.tree!.id, token);
     if (!link) { this.snack.open(this.translate.instant('TREE_EDITOR.SNACK.SHARE_ERROR'), '', { duration: 3000 }); return; }
-    await navigator.clipboard.writeText(link).catch(() => {});
+    await navigator.clipboard.writeText(link).catch(() => { });
     this.snack.open(this.translate.instant('TREE_EDITOR.SNACK.SHARE_COPIED'), '', { duration: 4000 });
   }
 
-  exportSVG():  void { this.exportService.downloadSVG(this.tree!, this.canvasRef?.getSVGElement()); }
+  exportSVG(): void { this.exportService.downloadSVG(this.tree!, this.canvasRef?.getSVGElement()); }
   exportText(): void { this.exportService.downloadText(this.tree!); }
   exportJSON(): void { this.exportService.downloadJSON(this.tree!); }
 }
