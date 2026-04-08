@@ -5,11 +5,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { FamilyTree, Person, Relation, RelationType, TreePermissions, TreeLayout } from '../models/index';
 import { StorageService } from './storage.service';
 import { TreeLayoutService } from './tree-layout.service';
+import { HistoryService } from './history.service';
 
 @Injectable({ providedIn: 'root' })
 export class TreeService {
   private storage = inject(StorageService);
   private layoutService = inject(TreeLayoutService);
+  private history = inject(HistoryService);
 
   // Currently active tree
   private _activeTreeId$ = new BehaviorSubject<string | null>(null);
@@ -92,6 +94,7 @@ export class TreeService {
   async addPerson(treeId: string, data: Omit<Person, 'id' | 'createdAt' | 'updatedAt'>): Promise<Person> {
     const tree = this.storage.getTree(treeId);
     if (!tree) throw new Error(`Tree ${treeId} not found`);
+    this.history.snapshot(tree);
     const person: Person = {
       ...data,
       id: uuidv4(),
@@ -105,6 +108,7 @@ export class TreeService {
   async updatePerson(treeId: string, updated: Person): Promise<void> {
     const tree = this.storage.getTree(treeId);
     if (!tree) return;
+    this.history.snapshot(tree);
     const persons = tree.persons.map(p =>
       p.id === updated.id ? { ...updated, updatedAt: new Date().toISOString() } : p
     );
@@ -114,6 +118,7 @@ export class TreeService {
   async deletePerson(treeId: string, personId: string): Promise<void> {
     const tree = this.storage.getTree(treeId);
     if (!tree) return;
+    this.history.snapshot(tree);
     await this.storage.saveTree({
       ...tree,
       persons: tree.persons.filter(p => p.id !== personId),
@@ -140,6 +145,7 @@ export class TreeService {
     );
     if (duplicate) return duplicate;
 
+    this.history.snapshot(tree);
     const relation: Relation = {
       id: uuidv4(),
       from, to, type,
@@ -152,6 +158,7 @@ export class TreeService {
   async updateRelation(treeId: string, updated: Relation): Promise<void> {
     const tree = this.storage.getTree(treeId);
     if (!tree) return;
+    this.history.snapshot(tree);
     const relations = tree.relations.map(r => r.id === updated.id ? updated : r);
     await this.storage.saveTree({ ...tree, relations });
   }
@@ -159,6 +166,7 @@ export class TreeService {
   async deleteRelation(treeId: string, relationId: string): Promise<void> {
     const tree = this.storage.getTree(treeId);
     if (!tree) return;
+    this.history.snapshot(tree);
     await this.storage.saveTree({
       ...tree,
       relations: tree.relations.filter(r => r.id !== relationId),
@@ -177,6 +185,33 @@ export class TreeService {
       const person = tree.persons.find(p => p.id === otherId);
       return person ? { person, relation: rel } : null;
     }).filter(Boolean) as { person: Person; relation: Relation }[];
+  }
+
+  // ── History ───────────────────────────────────
+
+  async undo(treeId: string): Promise<void> {
+    const tree = this.storage.getTree(treeId);
+    if (!tree) return;
+    const prev = this.history.popUndo(treeId);
+    if (!prev) return;
+    this.history.pushRedo(treeId, this.history.toSnap(tree));
+    await this.storage.saveTree({ ...tree, ...prev, updatedAt: new Date().toISOString() });
+  }
+
+  async redo(treeId: string): Promise<void> {
+    const tree = this.storage.getTree(treeId);
+    if (!tree) return;
+    const next = this.history.popRedo(treeId);
+    if (!next) return;
+    this.history.pushUndo(treeId, this.history.toSnap(tree));
+    await this.storage.saveTree({ ...tree, ...next, updatedAt: new Date().toISOString() });
+  }
+
+  async saveNodePositions(treeId: string, positions: Record<string, { x: number; y: number }>): Promise<void> {
+    const tree = this.storage.getTree(treeId);
+    if (!tree) return;
+    this.history.snapshot(tree);
+    await this.storage.saveTree({ ...tree, nodePositions: positions });
   }
 
   private generateToken(): string {

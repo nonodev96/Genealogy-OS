@@ -126,7 +126,9 @@
       "SHARE": "share",
       "EXPORT": "export",
       "SHARE_TOOLTIP": "generate collaboration link",
-      "STATUS_LIVE": "live"
+      "STATUS_LIVE": "live",
+      "UNDO": "undo (Ctrl+Z)",
+      "REDO": "redo (Ctrl+Shift+Z)"
     },
     "TABS": {
       "PERSONS": "persons",

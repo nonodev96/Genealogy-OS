@@ -1,5 +1,5 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { Injectable, OnDestroy } from '@angular/core';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { FamilyTree } from '../models/index';
 
 const DB_NAME = 'genealogy_db';
@@ -8,16 +8,32 @@ const STORE_TREES = 'family_trees';
 const LS_KEY = 'genealogy_trees';  // LocalStorage fallback key
 
 @Injectable({ providedIn: 'root' })
-export class StorageService {
+export class StorageService implements OnDestroy {
   private db: IDBDatabase | null = null;
   private useLocalStorage = false;
+
+  // Cross-tab real-time sync
+  private channel = new BroadcastChannel('genealogy_sync');
 
   // Reactive cache of all trees
   private _trees$ = new BehaviorSubject<FamilyTree[]>([]);
   readonly trees$ = this._trees$.asObservable();
 
+  private _ready$ = new BehaviorSubject<boolean>(false);
+  readonly ready$ = this._ready$.asObservable();
+
+  // Cross-tab live node-move events (no IDB write)
+  private _nodeMove$ = new Subject<{ treeId: string; nodeId: string; x: number; y: number }>();
+  readonly nodeMove$ = this._nodeMove$.asObservable();
+
   constructor() {
+    this.channel.onmessage = (ev) => this.handleSyncMessage(ev.data);
     this.initStorage();
+  }
+
+  ngOnDestroy(): void {
+    this.channel.close();
+    this._nodeMove$.complete();
   }
 
   // ── Initialisation ───────────────────────────
@@ -31,6 +47,8 @@ export class StorageService {
       console.warn('IndexedDB unavailable, falling back to localStorage');
       this.useLocalStorage = true;
       this._trees$.next(this.loadFromLocalStorage());
+    } finally {
+      this._ready$.next(true);
     }
   }
 
@@ -66,6 +84,7 @@ export class StorageService {
     } else {
       this._trees$.next([...current, updated]);
     }
+    this.channel.postMessage({ type: 'save', treeId: tree.id });
   }
 
   async deleteTree(treeId: string): Promise<void> {
@@ -76,20 +95,22 @@ export class StorageService {
       await this.idbDelete(treeId);
     }
     this._trees$.next(this._trees$.getValue().filter(t => t.id !== treeId));
+    this.channel.postMessage({ type: 'delete', treeId });
   }
 
-  getTree(treeId: string): FamilyTree {
-    const data = this._trees$.getValue().find(t => t.id === treeId);
-    if (!data) throw new Error(`Tree ${treeId} not found`);
-    return data;
+  /** Broadcast a live node drag position to other tabs — no IDB write */
+  broadcastNodeMove(treeId: string, nodeId: string, x: number, y: number): void {
+    this.channel.postMessage({ type: 'nodeMove', treeId, nodeId, x, y });
   }
 
-  getTreeByCollaborationToken(token: string): FamilyTree {
-    const data = this._trees$.getValue().find(
+  getTree(treeId: string): FamilyTree | null {
+    return this._trees$.getValue().find(t => t.id === treeId) ?? null;
+  }
+
+  getTreeByCollaborationToken(token: string): FamilyTree | null {
+    return this._trees$.getValue().find(
       t => t.permissions.collaborationToken === token
-    );
-    if (!data) throw new Error(`Tree with token ${token} not found`);
-    return data;
+    ) ?? null;
   }
 
   // ── IndexedDB helpers ─────────────────────────
@@ -108,6 +129,15 @@ export class StorageService {
       const tx = this.db!.transaction(STORE_TREES, 'readwrite');
       const req = tx.objectStore(STORE_TREES).put(tree);
       req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  private idbGet(id: string): Promise<FamilyTree | null> {
+    return new Promise((resolve, reject) => {
+      const tx = this.db!.transaction(STORE_TREES, 'readonly');
+      const req = tx.objectStore(STORE_TREES).get(id);
+      req.onsuccess = () => resolve((req.result as FamilyTree) ?? null);
       req.onerror = () => reject(req.error);
     });
   }
@@ -137,6 +167,30 @@ export class StorageService {
     const idx = trees.findIndex(t => t.id === tree.id);
     if (idx >= 0) trees[idx] = tree; else trees.push(tree);
     localStorage.setItem(LS_KEY, JSON.stringify(trees));
+  }
+
+  // ── Cross-tab sync ────────────────────────────
+
+  private async handleSyncMessage(msg: { type: 'save' | 'delete' | 'nodeMove'; treeId: string; nodeId?: string; x?: number; y?: number }): Promise<void> {
+    const current = [...this._trees$.getValue()];
+    if (msg.type === 'nodeMove') {
+      this._nodeMove$.next({ treeId: msg.treeId, nodeId: msg.nodeId!, x: msg.x!, y: msg.y! });
+      return;
+    }
+    if (msg.type === 'delete') {
+      this._trees$.next(current.filter(t => t.id !== msg.treeId));
+      return;
+    }
+    // type === 'save': reload the updated tree from persistent storage
+    try {
+      const updated = this.useLocalStorage
+        ? (this.loadFromLocalStorage().find(t => t.id === msg.treeId) ?? null)
+        : await this.idbGet(msg.treeId);
+      if (!updated) return;
+      const idx = current.findIndex(t => t.id === msg.treeId);
+      if (idx >= 0) { current[idx] = updated; } else { current.push(updated); }
+      this._trees$.next(current);
+    } catch { /* ignore – other tab may have deleted it */ }
   }
 
   // ── Photo helper ──────────────────────────────

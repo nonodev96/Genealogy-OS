@@ -14,7 +14,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTabsModule } from '@angular/material/tabs';
-import { Subscription } from 'rxjs';
+import { Subscription, fromEvent } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
 import { FamilyTree, Person, Relation, TreeLayout } from '../../core/models';
@@ -22,6 +22,7 @@ import { TreeService } from '../../core/services/tree.service';
 import { ExportService } from '../../core/services/export.service';
 import { CollaborationService } from '../../core/services/collaboration.service';
 import { TreeLayoutService } from '../../core/services/tree-layout.service';
+import { HistoryService } from '../../core/services/history.service';
 
 import { TreeCanvasComponent } from './tree-canvas/tree-canvas.component';
 import { PersonFormComponent, PersonFormData } from './person-form/person-form.component';
@@ -54,8 +55,12 @@ import { RelationFormComponent, RelationFormData } from './relation-form/relatio
           <span class="red-dot"></span>
           <span class="status-txt">{{ 'TREE_EDITOR.HEADER.STATUS_LIVE' | translate }}</span>
         </div>
-        <div class="header-actions">
-          <button class="hdr-btn" (click)="shareTree()" [matTooltip]="'TREE_EDITOR.HEADER.SHARE_TOOLTIP' | translate">
+        <div class="header-actions">          <button class="hdr-btn" [disabled]="!canUndo" (click)="undoAction()" [matTooltip]="'TREE_EDITOR.HEADER.UNDO' | translate">
+              <mat-icon>undo</mat-icon>
+            </button>
+            <button class="hdr-btn" [disabled]="!canRedo" (click)="redoAction()" [matTooltip]="'TREE_EDITOR.HEADER.REDO' | translate">
+              <mat-icon>redo</mat-icon>
+            </button>          <button class="hdr-btn" (click)="shareTree()" [matTooltip]="'TREE_EDITOR.HEADER.SHARE_TOOLTIP' | translate">
             <mat-icon>share</mat-icon><span>{{ 'TREE_EDITOR.HEADER.SHARE' | translate }}</span>
           </button>
           <button class="hdr-btn" [matMenuTriggerFor]="exportMenu">
@@ -240,6 +245,7 @@ import { RelationFormComponent, RelationFormData } from './relation-form/relatio
     }
     .hdr-btn mat-icon { font-size:13px !important; width:13px !important; height:13px !important; }
     .hdr-btn:hover { border-color:var(--border-mid); color:var(--text-primary); }
+    .hdr-btn[disabled] { opacity:0.3; cursor:default; pointer-events:none; }
 
     /* Body */
     .editor-body { flex:1; overflow:hidden; }
@@ -342,10 +348,13 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
   @ViewChild('canvas') canvasRef?: TreeCanvasComponent;
 
   private translate = inject(TranslateService);
+  private historyService = inject(HistoryService);
 
   tree: FamilyTree | null = null;
   layout: TreeLayout | null = null;
   selectedPersonId: string | null = null;
+  canUndo = false;
+  canRedo = false;
 
   private subs = new Subscription();
 
@@ -369,9 +378,41 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       })
     );
+    this.subs.add(
+      this.historyService.changed$.subscribe(() => {
+        this.canUndo = this.historyService.canUndo(this.tree?.id ?? '');
+        this.canRedo = this.historyService.canRedo(this.tree?.id ?? '');
+        this.cdr.markForCheck();
+      })
+    );
+    this.subs.add(
+      fromEvent<KeyboardEvent>(document, 'keydown').subscribe(ev => {
+        const mod = ev.ctrlKey || ev.metaKey;
+        if (!mod || !this.tree) return;
+        if (ev.key === 'z' && !ev.shiftKey) {
+          ev.preventDefault();
+          this.undoAction();
+        } else if ((ev.key === 'z' && ev.shiftKey) || ev.key === 'y') {
+          ev.preventDefault();
+          this.redoAction();
+        }
+      })
+    );
   }
 
-  ngOnDestroy(): void { this.subs.unsubscribe(); this.treeService.setActiveTree(null); }
+  ngOnDestroy(): void {
+    this.subs.unsubscribe();
+    this.treeService.setActiveTree(null);
+    this.historyService.clearTree(this.tree?.id ?? '');
+  }
+
+  async undoAction(): Promise<void> {
+    if (this.tree) await this.treeService.undo(this.tree.id);
+  }
+
+  async redoAction(): Promise<void> {
+    if (this.tree) await this.treeService.redo(this.tree.id);
+  }
 
   selectPerson(id: string): void {
     this.selectedPersonId = id === this.selectedPersonId ? null : id;

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { filter, take } from 'rxjs';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CollaborationService } from '../../core/services/collaboration.service';
 import { StorageService } from '../../core/services/storage.service';
@@ -166,7 +167,7 @@ export class CollaborateComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    setTimeout(() => {
+    this.storage.ready$.pipe(filter(Boolean), take(1)).subscribe(() => {
       const treeId = this.route.snapshot.queryParamMap.get('tree') ?? '';
       const token  = this.route.snapshot.queryParamMap.get('token') ?? '';
       if (!treeId || !token) { this.state = 'invalid'; return; }
@@ -177,7 +178,7 @@ export class CollaborateComponent implements OnInit {
       this.treeName = tree.name;
       this.collab.saveSession(this.session);
       this.state = 'valid';
-    }, 600); // brief load animation
+    });
   }
 
   openTree(): void {

@@ -1,14 +1,17 @@
 import {
-    Component, Input, OnChanges, OnDestroy, AfterViewInit,
-    ViewChild, ElementRef, Output, EventEmitter, SimpleChanges,
+    Component, Input, OnInit, OnChanges, OnDestroy, AfterViewInit,
+    ViewChild, ElementRef, Output, EventEmitter, SimpleChanges, inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslatePipe } from '@ngx-translate/core';
+import { Subject, takeUntil } from 'rxjs';
 import * as d3 from 'd3';
 import { FamilyTree, RelationType, PARENT_TYPES, PARTNER_TYPES, SIBLING_TYPES, TreeLayout } from '../../../core/models';
 import { TreeLayoutService, NODE_W, NODE_H } from '../../../core/services/tree-layout.service';
+import { StorageService } from '../../../core/services/storage.service';
+import { TreeService } from '../../../core/services/tree.service';
 
 /* Nothing palette */
 const C_RED = '#ff3333';
@@ -173,7 +176,7 @@ function edgeStroke(type: RelationType): string {
     .empty-sub { font-size:10px; color:var(--text-muted); letter-spacing:0.06em; }
   `],
 })
-export class TreeCanvasComponent implements AfterViewInit, OnChanges, OnDestroy {
+export class TreeCanvasComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy {
     @Input() tree!: FamilyTree;
     @Input() layout: TreeLayout | null = null;
     @Input() selectedPersonId: string | null = null;
@@ -189,23 +192,54 @@ export class TreeCanvasComponent implements AfterViewInit, OnChanges, OnDestroy 
 
     currentScale = 1;
     private nodePositions = new Map<string, { x: number; y: number }>();
+    private currentTreeId: string | null = null;
+    private syncedNodePositions: Record<string, { x: number; y: number }> | undefined = undefined;
+    private destroy$ = new Subject<void>();
+
+    private storage = inject(StorageService);
+    private treeService = inject(TreeService);
 
     private zoom!: d3.ZoomBehavior<SVGSVGElement, unknown>;
     private svg!: d3.Selection<SVGSVGElement, unknown, null, undefined>;
     private g!: d3.Selection<SVGGElement, unknown, null, undefined>;
 
+    ngOnInit(): void {
+        this.storage.nodeMove$.pipe(takeUntil(this.destroy$)).subscribe(ev => {
+            if (ev.treeId !== this.tree?.id) return;
+            const pos = this.nodePositions.get(ev.nodeId);
+            if (!pos) return;
+            pos.x = ev.x;
+            pos.y = ev.y;
+            // Move the node group and update edges without full re-render
+            if (this.g) {
+                this.g.select<SVGGElement>(`.nodes g[data-nid="${ev.nodeId}"]`)
+                    .attr('transform', `translate(${ev.x},${ev.y})`);
+                this.updateEdgePaths();
+            }
+        });
+    }
+
     ngAfterViewInit(): void { this.initD3(); if (this.layout) this.render(); }
 
     ngOnChanges(c: SimpleChanges): void {
         if (c['layout'] && this.g) {
-            this.nodePositions.clear();
+            if (this.tree?.id !== this.currentTreeId) {
+                // Different tree: clear everything so render starts fresh
+                this.currentTreeId = this.tree?.id ?? null;
+                this.nodePositions.clear();
+                this.syncedNodePositions = undefined;
+            }
             this.render();
         } else if (c['selectedPersonId'] && this.g) {
             this.render();
         }
     }
 
-    ngOnDestroy(): void { if (this.svg) this.svg.on('.zoom', null); }
+    ngOnDestroy(): void {
+        this.destroy$.next();
+        this.destroy$.complete();
+        if (this.svg) this.svg.on('.zoom', null);
+    }
 
     private initD3(): void {
         this.svg = d3.select<SVGSVGElement, unknown>(this.svgRef.nativeElement);
@@ -228,10 +262,25 @@ export class TreeCanvasComponent implements AfterViewInit, OnChanges, OnDestroy 
 
     private render(): void {
         if (!this.layout || !this.g) return;
+        const savedPos = this.tree?.nodePositions;
+        const positionsChanged = savedPos !== this.syncedNodePositions;
+        if (positionsChanged) {
+            // nodePositions object reference changed: undo/redo/drag-end → re-sync Map
+            this.syncedNodePositions = savedPos;
+        }
         this.layout.nodes.forEach(node => {
-            if (!this.nodePositions.has(node.id)) {
+            if (positionsChanged && savedPos?.[node.id]) {
+                // Always trust the authoritative saved position when it changed
+                this.nodePositions.set(node.id, { ...savedPos[node.id] });
+            } else if (!this.nodePositions.has(node.id)) {
+                // New node: fall back to layout position
                 this.nodePositions.set(node.id, { x: node.x, y: node.y });
             }
+            // else: keep current in-memory position (unsaved drag)
+        });
+        // Remove stale entries for deleted nodes
+        this.nodePositions.forEach((_, id) => {
+            if (!this.layout!.nodes.has(id)) this.nodePositions.delete(id);
         });
         this.g.selectAll('*').remove();
         this.renderEdges();
@@ -311,6 +360,7 @@ export class TreeCanvasComponent implements AfterViewInit, OnChanges, OnDestroy 
 
             const grp = ng.append('g')
                 .attr('transform', `translate(${pos.x},${pos.y})`)
+                .attr('data-nid', nodeId)
                 .attr('cursor', this.readOnly ? 'default' : 'grab')
                 .on('click', (ev: MouseEvent) => { ev.stopPropagation(); this.personClick.emit(nodeId); })
                 .on('dblclick', (ev: MouseEvent) => { ev.stopPropagation(); this.personDblClick.emit(nodeId); });
@@ -330,8 +380,15 @@ export class TreeCanvasComponent implements AfterViewInit, OnChanges, OnDestroy 
                             p.y += ev.dy / k;
                             grp.attr('transform', `translate(${p.x},${p.y})`);
                             this.updateEdgePaths();
+                            this.storage.broadcastNodeMove(this.tree.id, nodeId, p.x, p.y);
                         })
-                        .on('end', () => grp.attr('cursor', 'grab'))
+                        .on('end', () => {
+                            grp.attr('cursor', 'grab');
+                            this.treeService.saveNodePositions(
+                                this.tree.id,
+                                Object.fromEntries(this.nodePositions)
+                            );
+                        })
                 );
             }
 

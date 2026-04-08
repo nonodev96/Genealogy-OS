@@ -410,13 +410,16 @@ textarea {
 
 // Custom styles for Angular Material select trigger
 
-.mdc-text-field--outlined .mat-mdc-form-field-infix,
-.mdc-text-field--no-label .mat-mdc-form-field-infix {
-  padding-top: 4px !important;
-  padding-bottom: 4px !important;
-  min-height: 0 !important;
-}
+.lang-field {
 
-.mat-mdc-form-field-infix {
-  min-height: 16px !important;
+  .mdc-text-field--outlined .mat-mdc-form-field-infix,
+  .mdc-text-field--no-label .mat-mdc-form-field-infix {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+    min-height: 0 !important;
+  }
+
+  .mat-mdc-form-field-infix {
+    min-height: 16px !important;
+  }
 }

@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "Clan-Connect": {
+    "genealogy-os": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -67,10 +67,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "Clan-Connect:build:production"
+              "buildTarget": "genealogy-os:build:production"
             },
             "development": {
-              "buildTarget": "Clan-Connect:build:development"
+              "buildTarget": "genealogy-os:build:development"
             }
           },
           "defaultConfiguration": "development"

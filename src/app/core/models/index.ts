@@ -81,6 +81,7 @@ export interface FamilyTree {
   persons: Person[];
   relations: Relation[];
   permissions: TreePermissions;
+  nodePositions?: Record<string, { x: number; y: number }>;
   createdAt: string;
   updatedAt: string;
 }
