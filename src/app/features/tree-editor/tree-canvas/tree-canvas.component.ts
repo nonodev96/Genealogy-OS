@@ -374,10 +374,9 @@ export class TreeCanvasComponent implements OnInit, AfterViewInit, OnChanges, On
                             grp.raise().attr('cursor', 'grabbing');
                         })
                         .on('drag', (ev) => {
-                            const k = this.currentScale;
                             const p = this.nodePositions.get(nodeId)!;
-                            p.x += ev.dx / k;
-                            p.y += ev.dy / k;
+                            p.x += ev.dx;
+                            p.y += ev.dy;
                             grp.attr('transform', `translate(${p.x},${p.y})`);
                             this.updateEdgePaths();
                             this.storage.broadcastNodeMove(this.tree.id, nodeId, p.x, p.y);
