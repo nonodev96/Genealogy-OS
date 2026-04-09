@@ -12,6 +12,7 @@ import {
 	Output,
 	type SimpleChanges,
 	ViewChild,
+	signal,
 } from "@angular/core";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -34,14 +35,17 @@ import {
 	TreeLayoutService,
 } from "@core/services/tree-layout.service";
 
+const GRID_SIZE = 40;
+function snapToGrid(v: number): number { return Math.round(v / GRID_SIZE) * GRID_SIZE; }
+
 /* Nothing palette */
 const C_RED = "#ff3333";
 const C_WHITE = "#f0f0f0";
-const C_MUTED = "#444444";
+const C_MUTED = "#666666";
 const C_DIM = "rgba(255,255,255,0.07)";
 const C_MID = "rgba(255,255,255,0.14)";
-const C_SURF = "#0c0c0c";
-const C_ELEV = "#121212";
+const C_SURF = "#1c1c1c";
+const C_ELEV = "#222222";
 
 function edgeStroke(type: RelationType): string {
 	if (
@@ -91,12 +95,21 @@ function edgeStroke(type: RelationType): string {
         <span class="hud-val">{{ layout.edges.length }}</span>
       </div>
 
+      <!-- Link style selector -->
+      <div class="link-style-hud">
+        <span class="hud-label">{{ 'CANVAS.LINK_STYLE' | translate }}</span>
+        <select class="hud-select" [value]="linkStyle()" (change)="onLinkStyleChange($event)">
+          <option value="curved">{{ 'CANVAS.LINK_CURVED' | translate }}</option>
+          <option value="orthogonal">{{ 'CANVAS.LINK_ORTHOGONAL' | translate }}</option>
+        </select>
+      </div>
+
       <!-- SVG -->
       <svg #svgEl class="tree-svg">
         <defs>
-          <!-- Dot grid pattern -->
-          <pattern id="dot-grid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-            <circle cx="1" cy="1" r="0.6" fill="rgba(255,255,255,0.06)"/>
+          <!-- Grid pattern -->
+          <pattern id="dot-grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
           </pattern>
           <!-- Arrow markers -->
           <marker id="arr-parent"  markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
@@ -160,13 +173,13 @@ function edgeStroke(type: RelationType): string {
       padding:4px;
     }
     .z-btn {
-      width:28px; height:28px;
+      width:34px; height:34px;
       background:transparent;
       border:none;
       color:var(--text-secondary);
       font-family:var(--font-mono);
-      font-size:16px;
-      cursor:crosshair;
+      font-size:20px;
+      cursor:pointer;
       border-radius:var(--radius-sm);
       transition:all var(--t);
       display:flex; align-items:center; justify-content:center;
@@ -186,8 +199,27 @@ function edgeStroke(type: RelationType): string {
     }
     .scale-hud { bottom:16px; right:16px; }
     .node-hud  { bottom:16px; left:16px; }
-    .hud-label { font-size:9px; color:var(--text-muted); letter-spacing:0.1em; text-transform:uppercase; font-family:var(--font-display); }
-    .hud-val   { font-size:11px; color:var(--text-primary); font-family:var(--font-mono); }
+    .link-style-hud {
+      position:absolute; z-index:10; bottom:52px; left:16px;
+      background:var(--bg-surface);
+      border:1px solid var(--border-dim);
+      border-radius:var(--radius-sm);
+      padding:4px 10px;
+      display:flex; align-items:center; gap:6px;
+    }
+    .hud-select {
+      background:var(--bg-overlay, #2a2a2a);
+      color:var(--text-primary);
+      border:1px solid var(--border-dim);
+      border-radius:var(--radius-sm);
+      font-size:12px;
+      font-family:var(--font-mono);
+      padding:1px 4px;
+      cursor:pointer;
+    }
+    .hud-select:focus { outline:none; border-color:var(--border-mid); }
+    .hud-label { font-size:12px; color:var(--text-secondary); letter-spacing:0.1em; text-transform:uppercase; font-family:var(--font-display); }
+    .hud-val   { font-size:15px; color:var(--text-primary); font-family:var(--font-mono); font-weight:700; }
     .hud-sep   { color:var(--border-mid); font-size:10px; }
 
     /* SVG */
@@ -226,6 +258,7 @@ export class TreeCanvasComponent
 	@ViewChild("wrapper") wrapperRef!: ElementRef<HTMLDivElement>;
 
 	currentScale = 1;
+	linkStyle = signal<'curved' | 'orthogonal'>('curved');
 	private nodePositions = new Map<string, { x: number; y: number }>();
 	private currentTreeId: string | null = null;
 	private syncedNodePositions:
@@ -331,6 +364,22 @@ export class TreeCanvasComponent
 		this.renderNodes();
 	}
 
+	/* ── Edge path computation ───────────────────── */
+	private edgePath(x1: number, y1: number, x2: number, y2: number): string {
+		const isV = Math.abs(y2 - y1) > Math.abs(x2 - x1);
+		const mx = (x1 + x2) / 2;
+		const my = (y1 + y2) / 2;
+		if (this.linkStyle() === 'orthogonal') {
+			return isV
+				? `M${x1},${y1} L${x1},${my} L${x2},${my} L${x2},${y2}`
+				: `M${x1},${y1} L${mx},${y1} L${mx},${y2} L${x2},${y2}`;
+		} else {
+			return isV
+				? `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`
+				: `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
+		}
+	}
+
 	/* ── Edges ───────────────────────────────────── */
 	private renderEdges(): void {
 		const eg = this.g.append("g").attr("class", "edges");
@@ -357,15 +406,7 @@ export class TreeCanvasComponent
 					? "url(#arr-sibling)"
 					: "url(#arr-parent)";
 
-			const isV = Math.abs(y2 - y1) > Math.abs(x2 - x1);
-			let d: string;
-			if (isV) {
-				const my = (y1 + y2) / 2;
-				d = `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
-			} else {
-				const mx = (x1 + x2) / 2;
-				d = `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
-			}
+			const d = this.edgePath(x1, y1, x2, y2);
 
 			eg.append("path")
 				.attr("data-eid", e.id)
@@ -384,25 +425,25 @@ export class TreeCanvasComponent
 				.append("g")
 				.attr("data-label", e.id)
 				.attr("transform", `translate(${lx},${ly})`);
-			const tw = label.length * 5.5 + 12;
+			const tw = label.length * 6.5 + 16;
 			pill
 				.append("rect")
 				.attr("x", -tw / 2)
-				.attr("y", -8)
+				.attr("y", -9)
 				.attr("width", tw)
-				.attr("height", 14)
+				.attr("height", 16)
 				.attr("rx", 2)
 				.attr("fill", C_SURF)
-				.attr("stroke", C_DIM)
-				.attr("stroke-width", 0.5);
+				.attr("stroke", C_MID)
+				.attr("stroke-width", 0.8);
 			pill
 				.append("text")
 				.attr("text-anchor", "middle")
 				.attr("dominant-baseline", "middle")
 				.attr("y", -1)
-				.attr("font-size", "7")
+				.attr("font-size", "10")
 				.attr("letter-spacing", "0.06em")
-				.attr("fill", isPartner ? C_RED : "rgba(255,255,255,0.3)")
+				.attr("fill", isPartner ? C_RED : "rgba(255,255,255,0.75)")
 				.attr("font-family", "'Share Tech Mono', monospace")
 				.text(label);
 		});
@@ -434,17 +475,28 @@ export class TreeCanvasComponent
 
 			/* Drag behaviour */
 			if (!this.readOnly) {
+				let rawX = 0, rawY = 0;
 				grp.call(
 					d3
 						.drag<SVGGElement, unknown>()
 						.on("start", (ev) => {
 							ev.sourceEvent.stopPropagation();
 							grp.raise().attr("cursor", "grabbing");
+							const p = this.nodePositions.get(nodeId)!;
+							rawX = p.x;
+							rawY = p.y;
 						})
 						.on("drag", (ev) => {
 							const p = this.nodePositions.get(nodeId)!;
-							p.x += ev.dx;
-							p.y += ev.dy;
+							rawX += ev.dx;
+							rawY += ev.dy;
+							if (ev.sourceEvent.ctrlKey) {
+								p.x = snapToGrid(rawX);
+								p.y = snapToGrid(rawY);
+							} else {
+								p.x = rawX;
+								p.y = rawY;
+							}
 							grp.attr("transform", `translate(${p.x},${p.y})`);
 							this.updateEdgePaths();
 							this.storage.broadcastNodeMove(this.tree.id, nodeId, p.x, p.y);
@@ -551,7 +603,7 @@ export class TreeCanvasComponent
 					.attr("text-anchor", "middle")
 					.attr("dominant-baseline", "middle")
 					.attr("font-size", "18")
-					.attr("fill", "rgba(255,255,255,0.35)")
+					.attr("fill", "rgba(255,255,255,0.55)")
 					.attr("font-family", "'Orbitron', monospace")
 					.text(node.person.name.charAt(0).toUpperCase());
 			}
@@ -639,15 +691,7 @@ export class TreeCanvasComponent
 			const x2 = toPos.x + this.nodeW(toNode.person.name) / 2;
 			const y2 = toPos.y + NODE_H / 2;
 
-			const isV = Math.abs(y2 - y1) > Math.abs(x2 - x1);
-			let d: string;
-			if (isV) {
-				const my = (y1 + y2) / 2;
-				d = `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
-			} else {
-				const mx = (x1 + x2) / 2;
-				d = `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
-			}
+			const d = this.edgePath(x1, y1, x2, y2);
 
 			eg.select(`[data-eid="${e.id}"]`).attr("d", d);
 			eg.select(`[data-label="${e.id}"]`).attr(
@@ -655,6 +699,12 @@ export class TreeCanvasComponent
 				`translate(${(x1 + x2) / 2},${(y1 + y2) / 2})`,
 			);
 		});
+	}
+
+	onLinkStyleChange(ev: Event): void {
+		const val = (ev.target as HTMLSelectElement).value as 'curved' | 'orthogonal';
+		this.linkStyle.set(val);
+		this.updateEdgePaths();
 	}
 
 	zoomIn(): void {

@@ -29,8 +29,8 @@ html {
   --bg-elevated: #121212;
   --bg-overlay: rgba(255, 255, 255, 0.03);
   --text-primary: #f0f0f0;
-  --text-secondary: #888888;
-  --text-muted: #444444;
+  --text-secondary: #aaaaaa;
+  --text-muted: #666666;
   --text-accent: #ff3333;
   --border-dim: rgba(255, 255, 255, 0.07);
   --border-mid: rgba(255, 255, 255, 0.14);
@@ -64,7 +64,7 @@ body {
   background: var(--bg-void);
   color: var(--text-primary);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   cursor: crosshair;
@@ -124,7 +124,7 @@ body {
 mat-label {
   color: var(--text-muted) !important;
   font-family: var(--font-mono) !important;
-  font-size: 11px !important;
+  font-size: 12px !important;
   letter-spacing: 0.08em !important;
   text-transform: uppercase !important;
 }
@@ -155,7 +155,7 @@ textarea {
   border: 1px solid var(--border-accent) !important;
   border-radius: var(--radius-sm) !important;
   font-family: var(--font-display) !important;
-  font-size: 9px !important;
+  font-size: 11px !important;
   letter-spacing: 0.14em !important;
   text-transform: uppercase !important;
   transition: all var(--t) !important;
@@ -170,7 +170,7 @@ textarea {
 .mat-mdc-button:not([disabled]),
 .mat-mdc-outlined-button:not([disabled]) {
   color: var(--text-secondary) !important;
-  font-size: 11px !important;
+  font-size: 13px !important;
 }
 
 .mat-sidenav {
@@ -189,7 +189,7 @@ textarea {
 .mat-mdc-tab .mdc-tab__text-label {
   color: var(--text-muted) !important;
   font-family: var(--font-mono) !important;
-  font-size: 10px !important;
+  font-size: 12px !important;
   letter-spacing: 0.12em !important;
   text-transform: uppercase !important;
 }
@@ -216,7 +216,7 @@ textarea {
 .mat-mdc-menu-item {
   color: var(--text-secondary) !important;
   font-family: var(--font-mono) !important;
-  font-size: 11px !important;
+  font-size: 13px !important;
   cursor: crosshair !important;
   letter-spacing: 0.04em !important;
 }
@@ -240,14 +240,14 @@ textarea {
 }
 
 .mat-mdc-snack-bar-label {
-  font-size: 11px !important;
+  font-size: 13px !important;
   letter-spacing: 0.04em !important;
 }
 
 .mat-mdc-dialog-title {
   color: var(--text-primary) !important;
   font-family: var(--font-display) !important;
-  font-size: 12px !important;
+  font-size: 14px !important;
   letter-spacing: 0.16em !important;
   text-transform: uppercase !important;
   padding-bottom: 4px !important;
@@ -277,7 +277,7 @@ textarea {
 .mat-mdc-option {
   color: var(--text-secondary) !important;
   font-family: var(--font-mono) !important;
-  font-size: 11px !important;
+  font-size: 13px !important;
   cursor: crosshair !important;
 }
 
@@ -293,7 +293,7 @@ textarea {
 .mat-mdc-optgroup-label {
   color: var(--text-muted) !important;
   font-family: var(--font-display) !important;
-  font-size: 9px !important;
+  font-size: 11px !important;
   letter-spacing: 0.14em !important;
   text-transform: uppercase !important;
 }
@@ -303,24 +303,24 @@ textarea {
   border: 1px solid var(--border-dim) !important;
   color: var(--text-secondary) !important;
   font-family: var(--font-mono) !important;
-  font-size: 10px !important;
+  font-size: 12px !important;
   border-radius: var(--radius-sm) !important;
   letter-spacing: 0.04em !important;
-}
-
-.mat-divider {
-  border-color: var(--border-dim) !important;
 }
 
 .mat-icon {
   cursor: crosshair !important;
 }
 
+.mat-mdc-menu-trigger {
+  cursor: pointer !important;
+}
+
 .mat-mdc-tooltip {
   background: var(--bg-elevated) !important;
   border: 1px solid var(--border-mid) !important;
   font-family: var(--font-mono) !important;
-  font-size: 10px !important;
+  font-size: 12px !important;
   border-radius: var(--radius-sm) !important;
 }
 

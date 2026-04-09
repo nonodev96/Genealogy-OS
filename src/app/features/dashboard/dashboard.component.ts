@@ -430,8 +430,41 @@ export class ImportDialogComponent {
     }
     .lang-field .mat-mdc-text-field-wrapper { padding: 0 8px !important; }
     .lang-field .mdc-notched-outline__notch { border-right: none !important; }
-  `,
-	],
+
+    /* ── Mobile responsive ──────────────────────────────── */
+    @media (max-width: 640px) {
+      .dash-header {
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 10px 16px;
+      }
+      .header-nav {
+        flex-wrap: wrap;
+        gap: 8px;
+        width: 100%;
+      }
+      .status-bar {
+        flex-wrap: wrap;
+        padding: 6px 16px;
+        gap: 6px;
+      }
+      .status-spacer { display: none; }
+      .tree-grid {
+        grid-template-columns: 1fr;
+        padding: 16px;
+        gap: 12px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .nav-item.glyph-label,
+      .separator { display: none; }
+      .lang-field { width: 100px; }
+      .btn-create { padding: 6px 10px; }
+      .dash-header { padding: 8px 12px; }
+      .status-bar { padding: 4px 12px; }
+    }
+  `],
 })
 export class DashboardComponent implements OnInit {
 	private treeService = inject(TreeService);

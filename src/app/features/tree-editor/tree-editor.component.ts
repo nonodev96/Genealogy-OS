@@ -254,23 +254,23 @@ import { TreeCanvasComponent } from "./tree-canvas/tree-canvas.component";
       line-height:1;
     }
     .back-btn:hover { border-color:var(--border-mid); color:var(--text-primary); }
-    .header-breadcrumb { display:flex; align-items:center; gap:6px; font-size:11px; }
+    .header-breadcrumb { display:flex; align-items:center; gap:6px; font-size:15px; }
     .bc-root { color:var(--text-muted); font-family:var(--font-mono); }
     .bc-sep  { color:var(--border-mid); }
-    .bc-name { color:var(--text-primary); font-family:var(--font-display); font-size:11px; letter-spacing:0.06em; text-transform:uppercase; }
+    .bc-name { color:var(--text-primary); font-family:var(--font-display); font-size:15px; letter-spacing:0.06em; text-transform:uppercase; }
     .header-status { display:flex; align-items:center; gap:6px; }
     .status-txt { font-size:9px; color:var(--text-muted); letter-spacing:0.1em; font-family:var(--font-display); text-transform:uppercase; }
     .header-actions { margin-left:auto; display:flex; gap:6px; }
     .hdr-btn {
-      display:inline-flex; align-items:center; gap:4px;
-      padding:4px 10px;
+      display:inline-flex; align-items:center; gap:6px;
+      padding:6px 14px;
       background:transparent; border:1px solid var(--border-dim);
       border-radius:var(--radius-sm);
-      color:var(--text-secondary); font-family:var(--font-mono); font-size:10px;
+      color:var(--text-secondary); font-family:var(--font-mono); font-size:13px;
       letter-spacing:0.06em; cursor:crosshair;
       transition:all var(--t);
     }
-    .hdr-btn mat-icon { font-size:13px !important; width:13px !important; height:13px !important; }
+    .hdr-btn mat-icon { font-size:18px !important; width:18px !important; height:18px !important; }
     .hdr-btn:hover { border-color:var(--border-mid); color:var(--text-primary); }
     .hdr-btn[disabled] { opacity:0.3; cursor:default; pointer-events:none; }
 
@@ -285,14 +285,14 @@ import { TreeCanvasComponent } from "./tree-canvas/tree-canvas.component";
 
     .add-btn {
       display:flex; align-items:center; gap:6px;
-      width:100%; padding:8px 10px;
-      background:transparent; border:1px dashed var(--border-dim);
+      width:100%; padding:10px 12px;
+      background:transparent; border:1px dashed var(--border-mid);
       border-radius:var(--radius-sm);
-      color:var(--text-secondary); font-family:var(--font-display);
-      font-size:9px; letter-spacing:0.12em; text-transform:uppercase;
+      color:var(--text-primary); font-family:var(--font-display);
+      font-size:12px; letter-spacing:0.12em; text-transform:uppercase;
       cursor:crosshair; transition:all var(--t);
     }
-    .add-btn mat-icon { font-size:13px !important; width:13px !important; height:13px !important; }
+    .add-btn mat-icon { font-size:16px !important; width:16px !important; height:16px !important; }
     .add-btn:hover:not([disabled]) { border-color:var(--red); color:var(--red); background:var(--red-dim); }
     .add-btn[disabled] { opacity:0.3; }
 
@@ -316,8 +316,9 @@ import { TreeCanvasComponent } from "./tree-canvas/tree-canvas.component";
     .p-info { flex:1; min-width:0; }
     .p-name { display:block; font-size:11px; color:var(--text-primary); font-family:var(--font-mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .p-meta { font-size:9px; color:var(--text-muted); letter-spacing:0.06em; }
-    .ctx-btn { background:transparent; border:none; color:var(--text-muted); cursor:crosshair; padding:2px; }
-    .ctx-btn mat-icon { font-size:14px !important; width:14px !important; height:14px !important; }
+    .ctx-btn { background:transparent; border:none; color:var(--text-secondary); cursor:pointer; padding:2px; }
+    .ctx-btn mat-icon { font-size:16px !important; width:16px !important; height:16px !important; }
+    .ctx-btn:hover { color:var(--text-primary); }
 
     /* Relation rows */
     .rel-row { display:flex; align-items:center; gap:8px; padding:6px; border-radius:var(--radius-sm); border:1px solid transparent; transition:all var(--t); }
