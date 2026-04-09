@@ -2,8 +2,8 @@ import {
 	ChangeDetectionStrategy,
 	ChangeDetectorRef,
 	Component,
-	OnDestroy,
-	OnInit,
+	type OnDestroy,
+	type OnInit,
 	inject,
 } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";

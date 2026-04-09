@@ -108,6 +108,9 @@ export class StorageService implements OnDestroy {
 	broadcastComment(treeId: string, comment: PersonComment): void {
 		this.channel.postMessage({ type: "comment", treeId, comment });
 	}
+
+	/** Broadcast a live node drag position to other tabs — no IDB write */
+	broadcastNodeMove(
 		treeId: string,
 		nodeId: string,
 		x: number,

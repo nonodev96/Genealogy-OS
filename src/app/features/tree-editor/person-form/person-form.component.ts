@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, inject, signal, type OnInit, ChangeDetectionStrategy } from "@angular/core";
+import { Component, type ElementRef, ViewChild, inject, signal, type OnInit, ChangeDetectionStrategy } from "@angular/core";
 import {
 FormBuilder,
 type FormGroup,
