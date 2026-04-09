@@ -176,6 +176,9 @@
     "NODES": "nodes",
     "EDGES": "edges",
     "EMPTY_TITLE": "no_nodes_rendered",
-    "EMPTY_SUB": "add persons and relations to visualize"
+    "EMPTY_SUB": "add persons and relations to visualize",
+    "LINK_STYLE": "links",
+    "LINK_CURVED": "curved",
+    "LINK_ORTHOGONAL": "orthogonal"
   }
 }
