@@ -31,6 +31,14 @@ export const APP_ROUTES: Routes = [
 		title: "Unirse al árbol - GenealogíaApp",
 	},
 	{
+		path: "embed",
+		loadComponent: () =>
+			import("./features/embed/embed.component").then(
+				(m) => m.EmbedComponent,
+			),
+		title: "Genealogy OS - Embedded Tree",
+	},
+	{
 		path: "**",
 		redirectTo: "dashboard",
 	},

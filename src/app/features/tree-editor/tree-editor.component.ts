@@ -1,13 +1,16 @@
 import { BreakpointObserver, Breakpoints } from "@angular/cdk/layout";
 import {
-	ChangeDetectionStrategy,
-	ChangeDetectorRef,
-	Component,
-	inject,
-	type OnDestroy,
-	type OnInit,
-	ViewChild,
+ChangeDetectionStrategy,
+ChangeDetectorRef,
+Component,
+computed,
+inject,
+signal,
+type OnDestroy,
+type OnInit,
+ViewChild,
 } from "@angular/core";
+import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatDividerModule } from "@angular/material/divider";
@@ -22,22 +25,27 @@ import { TranslatePipe, TranslateService } from "@ngx-translate/core";
 import { fromEvent, Subscription, firstValueFrom } from "rxjs";
 import { filter } from "rxjs/operators";
 
-import type { FamilyTree, Person, Relation, RelationType, TreeLayout } from "@core/models";
+import type { FamilyTree, Person, Relation, RelationType, TreeLayout, TreeTheme } from "@core/models";
 import { CollaborationService } from "@core/services/collaboration.service";
 import { ExportService } from "@core/services/export.service";
-import { HistoryService } from "@core/services/history.service";
+import { HistoryService, type TreeSnapshot } from "@core/services/history.service";
 import { TreeService } from "@core/services/tree.service";
 import { TreeLayoutService } from "@core/services/tree-layout.service";
 import {
-	PersonFormComponent,
-	type PersonFormData,
+PersonFormComponent,
+type PersonFormData,
 } from "./person-form/person-form.component";
 import {
-	RelationFormComponent,
-	type RelationFormData,
+RelationFormComponent,
+type RelationFormData,
 } from "./relation-form/relation-form.component";
 import { TreeCanvasComponent } from "./tree-canvas/tree-canvas.component";
+import { TimelineComponent } from "./timeline/timeline.component";
+import { StatsPanelComponent } from "./stats-panel/stats-panel.component";
+import { ThemePickerComponent } from "./theme-picker/theme-picker.component";
+import { HistoryPanelComponent } from "./history-panel/history-panel.component";
 import { ConfirmDialogComponent } from "../../shared/confirm-dialog.component";
+
 
 @Component({
 	selector: "app-tree-editor",

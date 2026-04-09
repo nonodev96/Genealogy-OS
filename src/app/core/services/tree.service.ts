@@ -200,6 +200,39 @@ export class TreeService {
 		});
 	}
 
+	// ── Comments ──────────────────────────────────
+
+	async addComment(
+		treeId: string,
+		personId: string,
+		text: string,
+		author: string,
+	): Promise<void> {
+		const tree = this.storage.getTree(treeId);
+		if (!tree) return;
+		const comment: import("../models").PersonComment = {
+			id: crypto.randomUUID(),
+			personId,
+			text,
+			author,
+			createdAt: new Date().toISOString(),
+		};
+		await this.storage.saveTree({
+			...tree,
+			comments: [...(tree.comments ?? []), comment],
+		});
+		this.storage.broadcastComment(treeId, comment);
+	}
+
+	async deleteComment(treeId: string, commentId: string): Promise<void> {
+		const tree = this.storage.getTree(treeId);
+		if (!tree) return;
+		await this.storage.saveTree({
+			...tree,
+			comments: (tree.comments ?? []).filter((c) => c.id !== commentId),
+		});
+	}
+
 	// ── Utility ───────────────────────────────────
 
 	getRelationsForPerson(tree: FamilyTree, personId: string): Relation[] {

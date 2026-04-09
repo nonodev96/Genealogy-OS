@@ -66,6 +66,7 @@ export interface Person {
 	deathDate?: string;
 	gender?: "male" | "female" | "other" | "unknown";
 	notes?: string;
+	tags?: string[];
 	createdAt: string;
 	updatedAt: string;
 }
@@ -81,6 +82,22 @@ export interface Relation {
 	notes?: string;
 }
 
+// ── Tree Theme ────────────────────────────────
+export interface TreeTheme {
+	accentColor: string; // hex color
+	nodeBg: string; // hex color
+	edgeColor: string; // hex color
+}
+
+// ── Person Comment ────────────────────────────
+export interface PersonComment {
+	id: string;
+	personId: string;
+	text: string;
+	author: string;
+	createdAt: string;
+}
+
 // ── Family Tree (a "project") ─────────────────
 export interface FamilyTree {
 	id: string;
@@ -90,6 +107,8 @@ export interface FamilyTree {
 	relations: Relation[];
 	permissions: TreePermissions;
 	nodePositions?: Record<string, { x: number; y: number }>;
+	theme?: TreeTheme;
+	comments?: PersonComment[];
 	createdAt: string;
 	updatedAt: string;
 }

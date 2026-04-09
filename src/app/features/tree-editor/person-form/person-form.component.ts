@@ -1,16 +1,18 @@
-import { Component, inject, type OnInit } from "@angular/core";
+import { Component, type ElementRef, ViewChild, inject, signal, type OnInit, ChangeDetectionStrategy } from "@angular/core";
 import {
-	FormBuilder,
-	type FormGroup,
-	ReactiveFormsModule,
-	Validators,
+FormBuilder,
+type FormGroup,
+ReactiveFormsModule,
+Validators,
 } from "@angular/forms";
+import { MatAutocompleteModule, type MatAutocompleteSelectedEvent } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
+import { MatChipsModule, type MatChipInputEvent } from "@angular/material/chips";
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import {
-	MAT_DIALOG_DATA,
-	MatDialogModule,
-	MatDialogRef,
+MAT_DIALOG_DATA,
+MatDialogModule,
+MatDialogRef,
 } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -22,24 +24,28 @@ import type { Person } from "@core/models";
 import { StorageService } from "@core/services/storage.service";
 
 export interface PersonFormData {
-	person?: Person;
-	treeId: string;
+person?: Person;
+treeId: string;
+existingTags?: string[];
 }
 
 @Component({
-	selector: "app-person-form",
-	imports: [
-		ReactiveFormsModule,
-		MatDialogModule,
-		MatFormFieldModule,
-		MatInputModule,
-		MatDatepickerModule,
-		MatButtonModule,
-		MatSelectModule,
-		MatIconModule,
-		TranslatePipe,
-	],
-	template: `
+selector: "app-person-form",
+changeDetection: ChangeDetectionStrategy.OnPush,
+imports: [
+ReactiveFormsModule,
+MatDialogModule,
+MatFormFieldModule,
+MatInputModule,
+MatDatepickerModule,
+MatButtonModule,
+MatSelectModule,
+MatIconModule,
+MatChipsModule,
+MatAutocompleteModule,
+TranslatePipe,
+],
+template: `
     <h2 mat-dialog-title>
       <span class="marker">//</span>
       {{ (isEdit ? 'PERSON.FORM.TITLE_EDIT' : 'PERSON.FORM.TITLE_ADD') | translate }}
@@ -52,7 +58,7 @@ export interface PersonFormData {
         <div class="photo-area">
           <div class="avatar-zone" (click)="photoInput.click()" [class.has-photo]="!!previewUrl">
             @if (previewUrl) {
-            <img [src]="previewUrl" class="avatar-img"/>
+            <img [src]="previewUrl" class="avatar-img" alt=""/>
             }
             @if (!previewUrl) {
             <div class="avatar-placeholder">
@@ -79,7 +85,7 @@ export interface PersonFormData {
         <!-- Name -->
         <mat-form-field appearance="outline" class="full">
           <mat-label>{{ 'PERSON.FORM.NAME' | translate }}</mat-label>
-          <input matInput formControlName="name" placeholder="e.g. Juan García López" autocomplete="off"/>
+          <input matInput formControlName="name" placeholder="e.g. Juan Garcia Lopez" autocomplete="off"/>
           @if (form.get('name')?.hasError('required')) {
           <mat-error>{{ 'COMMON.REQUIRED' | translate }}</mat-error>
           }
@@ -112,6 +118,33 @@ export interface PersonFormData {
           <mat-datepicker #deathPicker></mat-datepicker>
         </mat-form-field>
 
+        <!-- Tags chip input -->
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>{{ 'TAGS.LABEL' | translate }}</mat-label>
+          <mat-chip-grid #chipGrid [attr.aria-label]="'TAGS.LABEL' | translate">
+            @for (tag of tags(); track tag) {
+            <mat-chip-row (removed)="removeTag(tag)">
+              {{ tag }}
+              <button matChipRemove [attr.aria-label]="'TAGS.REMOVE' | translate">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </mat-chip-row>
+            }
+            <input
+              #tagInput
+              [placeholder]="'TAGS.PLACEHOLDER' | translate"
+              [matChipInputFor]="chipGrid"
+              [matAutocomplete]="tagAuto"
+              (matChipInputTokenEnd)="addTagFromInput($event)"
+              (input)="onTagInput($event)"/>
+          </mat-chip-grid>
+          <mat-autocomplete #tagAuto="matAutocomplete" (optionSelected)="addTagFromAuto($event)">
+            @for (t of getFilteredSuggestions(); track t) {
+            <mat-option [value]="t">{{ t }}</mat-option>
+            }
+          </mat-autocomplete>
+        </mat-form-field>
+
         <!-- Notes -->
         <mat-form-field appearance="outline" class="full">
           <mat-label>{{ 'PERSON.FORM.BIO_NOTES' | translate }}</mat-label>
@@ -130,8 +163,8 @@ export interface PersonFormData {
       </button>
     </mat-dialog-actions>
   `,
-	styles: [
-		`
+styles: [
+`
     .marker { color:var(--red); margin-right:8px; font-family:var(--font-mono); }
     .form-grid { display:flex; flex-wrap:wrap; gap:12px; padding:14px 0; }
     .full  { width:100%; }
@@ -168,64 +201,109 @@ export interface PersonFormData {
     .avatar-zone:hover .avatar-overlay { opacity:1; }
     .photo-actions { display:flex; flex-direction:column; gap:4px; }
   `,
-	],
+],
 })
 export class PersonFormComponent implements OnInit {
-	private fb = inject(FormBuilder);
-	private storage = inject(StorageService);
-	private dialogRef = inject(MatDialogRef<PersonFormComponent>);
-	private snack = inject(MatSnackBar);
-	private translate = inject(TranslateService);
-	data = inject<PersonFormData>(MAT_DIALOG_DATA);
+private fb = inject(FormBuilder);
+private storage = inject(StorageService);
+private dialogRef = inject(MatDialogRef<PersonFormComponent>);
+private snack = inject(MatSnackBar);
+private translate = inject(TranslateService);
+data = inject<PersonFormData>(MAT_DIALOG_DATA);
 
-	form!: FormGroup;
-	previewUrl: string | null = null;
-	isEdit = false;
+@ViewChild("tagInput") tagInputRef?: ElementRef<HTMLInputElement>;
 
-	ngOnInit(): void {
-		this.isEdit = !!this.data.person;
-		const p = this.data.person;
-		this.form = this.fb.group({
-			name: [p?.name ?? "", [Validators.required, Validators.minLength(2)]],
-			gender: [p?.gender ?? "unknown"],
-			birthDate: [p?.birthDate ? new Date(p.birthDate) : null],
-			deathDate: [p?.deathDate ? new Date(p.deathDate) : null],
-			notes: [p?.notes ?? ""],
-		});
-		if (p?.photoUrl) this.previewUrl = p.photoUrl;
-	}
+form!: FormGroup;
+previewUrl: string | null = null;
+isEdit = false;
 
-	async onPhotoChange(event: Event): Promise<void> {
-		const file = (event.target as HTMLInputElement).files?.[0];
-		if (!file) return;
-		if (file.size > 2 * 1024 * 1024) {
-			this.snack.open(this.translate.instant('CONFIRM.PHOTO_TOO_LARGE'), '', { duration: 3000 });
-			return;
-		}
-		this.previewUrl = await this.storage.fileToBase64(file);
-	}
+readonly tags = signal<string[]>([]);
+readonly tagInputValue = signal<string>("");
 
-	clearPhoto(): void {
-		this.previewUrl = null;
-	}
-	onCancel(): void {
-		this.dialogRef.close(null);
-	}
+ngOnInit(): void {
+this.isEdit = !!this.data.person;
+const p = this.data.person;
+this.form = this.fb.group({
+name: [p?.name ?? "", [Validators.required, Validators.minLength(2)]],
+gender: [p?.gender ?? "unknown"],
+birthDate: [p?.birthDate ? new Date(p.birthDate) : null],
+deathDate: [p?.deathDate ? new Date(p.deathDate) : null],
+notes: [p?.notes ?? ""],
+});
+if (p?.photoUrl) this.previewUrl = p.photoUrl;
+if (p?.tags) this.tags.set([...p.tags]);
+}
 
-	onSave(): void {
-		if (this.form.invalid) return;
-		const v = this.form.value;
-		this.dialogRef.close({
-			name: v.name.trim(),
-			gender: v.gender,
-			birthDate: v.birthDate
-				? (v.birthDate as Date).toISOString().split("T")[0]
-				: undefined,
-			deathDate: v.deathDate
-				? (v.deathDate as Date).toISOString().split("T")[0]
-				: undefined,
-			notes: v.notes || undefined,
-			photoUrl: this.previewUrl || undefined,
-		});
-	}
+getFilteredSuggestions(): string[] {
+const query = this.tagInputValue().toLowerCase();
+const existing = new Set(this.tags());
+const all = this.data.existingTags ?? [];
+return all.filter(
+(t) => !existing.has(t) && t.toLowerCase().includes(query),
+);
+}
+
+onTagInput(event: Event): void {
+this.tagInputValue.set((event.target as HTMLInputElement).value);
+}
+
+addTagFromInput(event: MatChipInputEvent): void {
+const value = (event.value ?? "").trim();
+if (value) this.addTag(value);
+event.chipInput.clear();
+this.tagInputValue.set("");
+}
+
+addTagFromAuto(event: MatAutocompleteSelectedEvent): void {
+this.addTag(event.option.viewValue);
+if (this.tagInputRef) this.tagInputRef.nativeElement.value = "";
+this.tagInputValue.set("");
+}
+
+addTag(tag: string): void {
+const t = tag.trim().toLowerCase();
+if (t && !this.tags().includes(t)) {
+this.tags.update((prev) => [...prev, t]);
+}
+}
+
+removeTag(tag: string): void {
+this.tags.update((prev) => prev.filter((t) => t !== tag));
+}
+
+async onPhotoChange(event: Event): Promise<void> {
+const file = (event.target as HTMLInputElement).files?.[0];
+if (!file) return;
+if (file.size > 2 * 1024 * 1024) {
+this.snack.open(this.translate.instant("CONFIRM.PHOTO_TOO_LARGE"), "", { duration: 3000 });
+return;
+}
+this.previewUrl = await this.storage.fileToBase64(file);
+}
+
+clearPhoto(): void {
+this.previewUrl = null;
+}
+
+onCancel(): void {
+this.dialogRef.close(null);
+}
+
+onSave(): void {
+if (this.form.invalid) return;
+const v = this.form.value;
+this.dialogRef.close({
+name: v.name.trim(),
+gender: v.gender,
+birthDate: v.birthDate
+? (v.birthDate as Date).toISOString().split("T")[0]
+: undefined,
+deathDate: v.deathDate
+? (v.deathDate as Date).toISOString().split("T")[0]
+: undefined,
+notes: v.notes || undefined,
+photoUrl: this.previewUrl || undefined,
+tags: this.tags().length > 0 ? [...this.tags()] : undefined,
+});
+}
 }

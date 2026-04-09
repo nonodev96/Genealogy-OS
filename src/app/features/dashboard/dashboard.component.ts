@@ -29,6 +29,7 @@ import { TranslatePipe, TranslateService } from "@ngx-translate/core";
 import { filter } from "rxjs/operators";
 import type { FamilyTree } from "@core/models";
 import { ExportService } from "@core/services/export.service";
+import { GedcomParserService } from "@core/services/gedcom-parser.service";
 import { StorageService } from "@core/services/storage.service";
 import { TreeService } from "@core/services/tree.service";
 import { ConfirmDialogComponent } from "../../shared/confirm-dialog.component";
@@ -110,7 +111,7 @@ export class NewTreeDialogComponent {
         <p class="drop-label">{{ file ? file.name : ('TREE.IMPORT_DIALOG.DRAG' | translate) }}</p>
         <p class="drop-hint">{{ 'TREE.IMPORT_DIALOG.HINT' | translate }}</p>
       </div>
-      <input #fileInput type="file" accept=".json" hidden (change)="onFileChange($event)"/>
+      <input #fileInput type="file" accept=".json,.ged" hidden (change)="onFileChange($event)"/>
     </mat-dialog-content>
     <mat-dialog-actions>
       <button mat-button mat-dialog-close>{{ 'COMMON.CANCEL' | translate }}</button>
@@ -470,6 +471,7 @@ export class DashboardComponent implements OnInit {
 	private treeService = inject(TreeService);
 	private storage = inject(StorageService);
 	private exportService = inject(ExportService);
+	private gedcomParser = inject(GedcomParserService);
 	private dialog = inject(MatDialog);
 	private snack = inject(MatSnackBar);
 	private router = inject(Router);
@@ -545,6 +547,28 @@ export class DashboardComponent implements OnInit {
 			.afterClosed()
 			.pipe(filter(Boolean))
 			.subscribe(async (file: File) => {
+				const isGedcom = file.name.toLowerCase().endsWith(".ged");
+				if (isGedcom) {
+					try {
+						const result = await this.gedcomParser.parseFile(file);
+						const treeName = file.name.replace(/\.ged$/i, "");
+						const tree = await this.treeService.createTree(treeName);
+						const updatedTree: FamilyTree = {
+							...tree,
+							persons: result.persons,
+							relations: result.relations,
+						};
+						await this.storage.saveTree(updatedTree);
+						this.snack
+							.open(this.translate.instant("DASHBOARD.SNACK.IMPORTED", { name: tree.name }), this.translate.instant("DASHBOARD.SNACK.OPEN_ACTION"), { duration: 4000 })
+							.onAction()
+							.subscribe(() => this.openTree(updatedTree));
+					} catch {
+						this.snack.open(this.translate.instant("DASHBOARD.SNACK.IMPORT_ERROR"), "", { duration: 3000 });
+					}
+					this.cdr.markForCheck();
+					return;
+				}
 				const tree = await this.exportService.importJSON(file);
 				if (!tree) {
 					this.snack.open(this.translate.instant("DASHBOARD.SNACK.IMPORT_ERROR"), "", { duration: 3000 });
