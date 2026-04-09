@@ -176,6 +176,9 @@
     "NODES": "nodos",
     "EDGES": "aristas",
     "EMPTY_TITLE": "no_nodos_renderizados",
-    "EMPTY_SUB": "añade personas y relaciones para visualizar"
+    "EMPTY_SUB": "añade personas y relaciones para visualizar",
+    "LINK_STYLE": "enlaces",
+    "LINK_CURVED": "curvo",
+    "LINK_ORTHOGONAL": "ortogonal"
   }
 }
