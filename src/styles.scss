@@ -312,6 +312,10 @@ textarea {
   cursor: crosshair !important;
 }
 
+.mat-mdc-menu-trigger {
+  cursor: pointer !important;
+}
+
 .mat-mdc-tooltip {
   background: var(--bg-elevated) !important;
   border: 1px solid var(--border-mid) !important;
