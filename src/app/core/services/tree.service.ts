@@ -2,13 +2,12 @@ import { Injectable, inject } from "@angular/core";
 import { BehaviorSubject, combineLatest, type Observable } from "rxjs";
 import { map } from "rxjs/operators";
 import { v4 as uuidv4 } from "uuid";
-import {
-	type FamilyTree,
-	type Person,
-	type Relation,
-	type RelationType,
-	type TreeLayout,
-	TreePermissions,
+import type {
+	FamilyTree,
+	Person,
+	Relation,
+	RelationType,
+	TreeLayout,
 } from "../models/index";
 import { HistoryService } from "./history.service";
 import { StorageService } from "./storage.service";

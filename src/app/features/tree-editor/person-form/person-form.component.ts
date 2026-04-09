@@ -18,8 +18,8 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { TranslatePipe } from "@ngx-translate/core";
-import type { Person } from "../../../core/models";
-import { StorageService } from "../../../core/services/storage.service";
+import type { Person } from "@core/models";
+import { StorageService } from "@core/services/storage.service";
 
 export interface PersonFormData {
 	person?: Person;

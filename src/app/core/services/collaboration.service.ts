@@ -1,16 +1,12 @@
 import { Injectable } from "@angular/core";
-import { type CollaborationSession, FamilyTree } from "../models";
-import type { StorageService } from "./storage.service";
-import type { TreeService } from "./tree.service";
+import type { CollaborationSession } from "../models";
+import { StorageService } from "./storage.service";
 
 const SESSION_KEY = "genealogy_session";
 
 @Injectable({ providedIn: "root" })
 export class CollaborationService {
-	constructor(
-		private storage: StorageService,
-		private treeService: TreeService,
-	) {}
+	constructor(private storage: StorageService) {}
 
 	// ── Session management ────────────────────────
 

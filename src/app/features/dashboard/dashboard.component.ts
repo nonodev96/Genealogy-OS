@@ -7,8 +7,8 @@ import {
 	type OnInit,
 } from "@angular/core";
 import {
-	type FormBuilder,
-	type FormGroup,
+	FormBuilder,
+	FormGroup,
 	ReactiveFormsModule,
 	Validators,
 } from "@angular/forms";
@@ -16,7 +16,7 @@ import { MatButtonModule } from "@angular/material/button";
 import {
 	MatDialog,
 	MatDialogModule,
-	type MatDialogRef,
+	MatDialogRef,
 } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -28,10 +28,10 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router, RouterModule } from "@angular/router";
 import { TranslatePipe, TranslateService } from "@ngx-translate/core";
 import { filter } from "rxjs/operators";
-import type { FamilyTree } from "../../core/models";
-import { ExportService } from "../../core/services/export.service";
-import { StorageService } from "../../core/services/storage.service";
-import { TreeService } from "../../core/services/tree.service";
+import type { FamilyTree } from "@core/models";
+import { ExportService } from "@core/services/export.service";
+import { StorageService } from "@core/services/storage.service";
+import { TreeService } from "@core/services/tree.service";
 
 /* ── New-tree dialog ───────────────────────────────── */
 @Component({
@@ -83,7 +83,7 @@ import { TreeService } from "../../core/services/tree.service";
 export class NewTreeDialogComponent {
 	form: FormGroup;
 	constructor(
-		private fb: FormBuilder,
+		fb: FormBuilder,
 		private ref: MatDialogRef<NewTreeDialogComponent>,
 	) {
 		this.form = fb.group({
@@ -453,9 +453,7 @@ export class DashboardComponent implements OnInit {
 
 	trees$ = this.storage.trees$;
 	now = new Date();
-	private clockInterval: any;
-
-	constructor() {}
+	private clockInterval: ReturnType<typeof setInterval> | undefined = undefined;
 
 	ngOnInit(): void {
 		this.clockInterval = setInterval(() => {

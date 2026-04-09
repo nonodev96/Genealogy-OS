@@ -80,7 +80,7 @@ export class HistoryService implements OnDestroy {
 		treeId: string,
 	): TreeSnapshot[] {
 		if (!map.has(treeId)) map.set(treeId, []);
-		return map.get(treeId)!;
+		return map.get(treeId) as TreeSnapshot[];
 	}
 
 	private trim(stack: TreeSnapshot[]): void {

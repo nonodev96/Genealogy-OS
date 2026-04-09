@@ -18,8 +18,8 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { TranslatePipe } from "@ngx-translate/core";
-import type { Person, Relation, RelationType } from "../../../core/models";
-import { TreeLayoutService } from "../../../core/services/tree-layout.service";
+import type { Person, Relation, RelationType } from "@core/models";
+import { TreeLayoutService } from "@core/services/tree-layout.service";
 
 export interface RelationFormData {
 	relation?: Relation;

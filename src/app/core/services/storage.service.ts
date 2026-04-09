@@ -130,7 +130,11 @@ export class StorageService implements OnDestroy {
 
 	private loadAllFromIDB(): Promise<FamilyTree[]> {
 		return new Promise((resolve, reject) => {
-			const tx = this.db!.transaction(STORE_TREES, "readonly");
+			if (!this.db) {
+				reject(new Error("IDB not ready"));
+				return;
+			}
+			const tx = this.db.transaction(STORE_TREES, "readonly");
 			const req = tx.objectStore(STORE_TREES).getAll();
 			req.onsuccess = () => resolve(req.result as FamilyTree[]);
 			req.onerror = () => reject(req.error);
@@ -139,7 +143,11 @@ export class StorageService implements OnDestroy {
 
 	private idbPut(tree: FamilyTree): Promise<void> {
 		return new Promise((resolve, reject) => {
-			const tx = this.db!.transaction(STORE_TREES, "readwrite");
+			if (!this.db) {
+				reject(new Error("IDB not ready"));
+				return;
+			}
+			const tx = this.db.transaction(STORE_TREES, "readwrite");
 			const req = tx.objectStore(STORE_TREES).put(tree);
 			req.onsuccess = () => resolve();
 			req.onerror = () => reject(req.error);
@@ -148,7 +156,11 @@ export class StorageService implements OnDestroy {
 
 	private idbGet(id: string): Promise<FamilyTree | null> {
 		return new Promise((resolve, reject) => {
-			const tx = this.db!.transaction(STORE_TREES, "readonly");
+			if (!this.db) {
+				reject(new Error("IDB not ready"));
+				return;
+			}
+			const tx = this.db.transaction(STORE_TREES, "readonly");
 			const req = tx.objectStore(STORE_TREES).get(id);
 			req.onsuccess = () => resolve((req.result as FamilyTree) ?? null);
 			req.onerror = () => reject(req.error);
@@ -157,7 +169,11 @@ export class StorageService implements OnDestroy {
 
 	private idbDelete(id: string): Promise<void> {
 		return new Promise((resolve, reject) => {
-			const tx = this.db!.transaction(STORE_TREES, "readwrite");
+			if (!this.db) {
+				reject(new Error("IDB not ready"));
+				return;
+			}
+			const tx = this.db.transaction(STORE_TREES, "readwrite");
 			const req = tx.objectStore(STORE_TREES).delete(id);
 			req.onsuccess = () => resolve();
 			req.onerror = () => reject(req.error);
@@ -197,9 +213,9 @@ export class StorageService implements OnDestroy {
 		if (msg.type === "nodeMove") {
 			this._nodeMove$.next({
 				treeId: msg.treeId,
-				nodeId: msg.nodeId!,
-				x: msg.x!,
-				y: msg.y!,
+				nodeId: msg.nodeId ?? "",
+				x: msg.x ?? 0,
+				y: msg.y ?? 0,
 			});
 			return;
 		}

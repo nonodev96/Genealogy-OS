@@ -2,23 +2,23 @@ import { BreakpointObserver, Breakpoints } from "@angular/cdk/layout";
 import { CommonModule } from "@angular/common";
 import {
 	ChangeDetectionStrategy,
-	type ChangeDetectorRef,
+	 ChangeDetectorRef,
 	Component,
 	inject,
-	type OnDestroy,
-	type OnInit,
+	 OnDestroy,
+	 OnInit,
 	ViewChild,
 } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import type { MatDialog } from "@angular/material/dialog";
+import  { MatDialog } from "@angular/material/dialog";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatIconModule } from "@angular/material/icon";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatSidenavModule } from "@angular/material/sidenav";
-import type { MatSnackBar } from "@angular/material/snack-bar";
+import  { MatSnackBar } from "@angular/material/snack-bar";
 import { MatTabsModule } from "@angular/material/tabs";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { type ActivatedRoute, RouterModule } from "@angular/router";
+import { ActivatedRoute, RouterModule } from "@angular/router";
 import { TranslatePipe, TranslateService } from "@ngx-translate/core";
 import { fromEvent, Subscription } from "rxjs";
 import { filter } from "rxjs/operators";
@@ -28,12 +28,12 @@ import type {
 	Person,
 	Relation,
 	TreeLayout,
-} from "../../core/models";
-import type { CollaborationService } from "../../core/services/collaboration.service";
-import type { ExportService } from "../../core/services/export.service";
-import { HistoryService } from "../../core/services/history.service";
-import type { TreeService } from "../../core/services/tree.service";
-import { TreeLayoutService } from "../../core/services/tree-layout.service";
+} from "@core/models";
+import  { CollaborationService } from "@core/services/collaboration.service";
+import { ExportService } from "@core/services/export.service";
+import { HistoryService } from "@core/services/history.service";
+import { TreeService } from "@core/services/tree.service";
+import { TreeLayoutService } from "@core/services/tree-layout.service";
 import {
 	PersonFormComponent,
 	type PersonFormData,

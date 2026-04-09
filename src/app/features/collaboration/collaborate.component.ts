@@ -2,16 +2,12 @@ import { CommonModule } from "@angular/common";
 import { Component, type OnInit } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
-import {
-	type ActivatedRoute,
-	type Router,
-	RouterModule,
-} from "@angular/router";
+import { ActivatedRoute, Router, RouterModule } from "@angular/router";
 import { TranslatePipe } from "@ngx-translate/core";
 import { filter, take } from "rxjs";
-import type { CollaborationSession } from "../../core/models";
-import type { CollaborationService } from "../../core/services/collaboration.service";
-import type { StorageService } from "../../core/services/storage.service";
+import type { CollaborationSession } from "@core/models";
+import { CollaborationService } from "@core/services/collaboration.service";
+import { StorageService } from "@core/services/storage.service";
 
 @Component({
 	selector: "app-collaborate",

@@ -78,7 +78,7 @@ export class TreeLayoutService {
 		const byLevel = new Map<number, string[]>();
 		levels.forEach((lvl, id) => {
 			if (!byLevel.has(lvl)) byLevel.set(lvl, []);
-			byLevel.get(lvl)!.push(id);
+			(byLevel.get(lvl) as string[]).push(id);
 		});
 
 		// ── Step 4: assign x positions (partner groups first) ───────────────────
@@ -183,9 +183,11 @@ export class TreeLayoutService {
 		const enqueued = new Set(startNodes);
 
 		while (queue.length > 0) {
-			const { id, lvl } = queue.shift()!;
+			const entry = queue.shift();
+			if (!entry) break;
+			const { id, lvl } = entry;
 			// Accept deeper level if re-encountered (DAG, not just tree)
-			if (!levels.has(id) || levels.get(id)! < lvl) {
+			if (!levels.has(id) || (levels.get(id) as number) < lvl) {
 				levels.set(id, lvl);
 			}
 			// Enqueue children
@@ -218,15 +220,17 @@ export class TreeLayoutService {
 
 		// Re-index levels to 0..N so Y starts at 0
 		const levelYMap = new Map<number, number>();
-		sortedLevels.forEach((lvl, i) => levelYMap.set(lvl, i));
+		sortedLevels.forEach((lvl, i) => {
+			levelYMap.set(lvl, i);
+		});
 
 		let globalX = 0; // Running x cursor across ALL levels for initial placement
 
 		// We assign x level-by-level, grouping partners
 		sortedLevels.forEach((lvl) => {
-			const ids = byLevel.get(lvl)!;
+			const ids = byLevel.get(lvl) as string[];
 			const groups = this.buildPartnerGroups(ids, partnerOf);
-			const y = levelYMap.get(lvl)! * (NODE_H + V_GAP);
+			const y = (levelYMap.get(lvl) as number) * (NODE_H + V_GAP);
 
 			// Sort groups: prefer groups whose parents have already been placed
 			groups.forEach((group) => {

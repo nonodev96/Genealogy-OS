@@ -25,14 +25,14 @@ import {
 	type RelationType,
 	SIBLING_TYPES,
 	type TreeLayout,
-} from "../../../core/models";
-import { StorageService } from "../../../core/services/storage.service";
-import { TreeService } from "../../../core/services/tree.service";
+} from "@core/models";
+import { StorageService } from "@core/services/storage.service";
+import { TreeService } from "@core/services/tree.service";
 import {
 	NODE_H,
 	NODE_W,
 	TreeLayoutService,
-} from "../../../core/services/tree-layout.service";
+} from "@core/services/tree-layout.service";
 
 /* Nothing palette */
 const C_RED = "#ff3333";

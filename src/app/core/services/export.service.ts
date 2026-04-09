@@ -52,7 +52,7 @@ export class ExportService {
 			clone.setAttribute("height", String(vh));
 			clone.setAttribute("viewBox", `${vx} ${vy} ${vw} ${vh}`);
 
-			return '<?xml version="1.0" encoding="UTF-8"?>\n' + clone.outerHTML;
+			return `<?xml version="1.0" encoding="UTF-8"?>${clone.outerHTML}`;
 		}
 
 		// Fallback: programmatic SVG
