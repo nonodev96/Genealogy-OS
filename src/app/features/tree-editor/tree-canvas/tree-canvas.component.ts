@@ -322,22 +322,16 @@ export class TreeCanvasComponent implements OnInit, AfterViewInit, OnChanges, On
     /* ── Edge path computation ───────────────────── */
     private edgePath(x1: number, y1: number, x2: number, y2: number): string {
         const isV = Math.abs(y2 - y1) > Math.abs(x2 - x1);
+        const mx = (x1 + x2) / 2;
+        const my = (y1 + y2) / 2;
         if (this.linkStyle() === 'orthogonal') {
-            if (isV) {
-                const my = (y1 + y2) / 2;
-                return `M${x1},${y1} L${x1},${my} L${x2},${my} L${x2},${y2}`;
-            } else {
-                const mx = (x1 + x2) / 2;
-                return `M${x1},${y1} L${mx},${y1} L${mx},${y2} L${x2},${y2}`;
-            }
+            return isV
+                ? `M${x1},${y1} L${x1},${my} L${x2},${my} L${x2},${y2}`
+                : `M${x1},${y1} L${mx},${y1} L${mx},${y2} L${x2},${y2}`;
         } else {
-            if (isV) {
-                const my = (y1 + y2) / 2;
-                return `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
-            } else {
-                const mx = (x1 + x2) / 2;
-                return `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
-            }
+            return isV
+                ? `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`
+                : `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
         }
     }
 
