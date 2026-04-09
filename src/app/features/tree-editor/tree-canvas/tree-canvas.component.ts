@@ -77,7 +77,7 @@ function edgeStroke(type: RelationType): string {
         <defs>
           <!-- Grid pattern -->
           <pattern id="dot-grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="0.5"/>
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
           </pattern>
           <!-- Arrow markers -->
           <marker id="arr-parent"  markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
@@ -407,19 +407,26 @@ export class TreeCanvasComponent implements OnInit, AfterViewInit, OnChanges, On
 
             /* Drag behaviour */
             if (!this.readOnly) {
+                let rawX = 0, rawY = 0;
                 grp.call(
                     d3.drag<SVGGElement, unknown>()
                         .on('start', (ev) => {
                             ev.sourceEvent.stopPropagation();
                             grp.raise().attr('cursor', 'grabbing');
+                            const p = this.nodePositions.get(nodeId)!;
+                            rawX = p.x;
+                            rawY = p.y;
                         })
                         .on('drag', (ev) => {
                             const p = this.nodePositions.get(nodeId)!;
-                            p.x += ev.dx;
-                            p.y += ev.dy;
+                            rawX += ev.dx;
+                            rawY += ev.dy;
                             if (ev.sourceEvent.ctrlKey) {
-                                p.x = snapToGrid(p.x);
-                                p.y = snapToGrid(p.y);
+                                p.x = snapToGrid(rawX);
+                                p.y = snapToGrid(rawY);
+                            } else {
+                                p.x = rawX;
+                                p.y = rawY;
                             }
                             grp.attr('transform', `translate(${p.x},${p.y})`);
                             this.updateEdgePaths();
