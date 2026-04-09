@@ -16,11 +16,11 @@ import { TreeService } from '../../../core/services/tree.service';
 /* Nothing palette */
 const C_RED = '#ff3333';
 const C_WHITE = '#f0f0f0';
-const C_MUTED = '#444444';
+const C_MUTED = '#666666';
 const C_DIM = 'rgba(255,255,255,0.07)';
 const C_MID = 'rgba(255,255,255,0.14)';
-const C_SURF = '#0c0c0c';
-const C_ELEV = '#121212';
+const C_SURF = '#1c1c1c';
+const C_ELEV = '#222222';
 
 function edgeStroke(type: RelationType): string {
     if (PARENT_TYPES.includes(type) || ['childOf', 'descendantOf', 'adoptiveChildOf', 'stepChildOf', 'wardOf'].includes(type)) return C_WHITE;
@@ -128,13 +128,13 @@ function edgeStroke(type: RelationType): string {
       padding:4px;
     }
     .z-btn {
-      width:28px; height:28px;
+      width:34px; height:34px;
       background:transparent;
       border:none;
       color:var(--text-secondary);
       font-family:var(--font-mono);
-      font-size:16px;
-      cursor:crosshair;
+      font-size:20px;
+      cursor:pointer;
       border-radius:var(--radius-sm);
       transition:all var(--t);
       display:flex; align-items:center; justify-content:center;
@@ -154,8 +154,8 @@ function edgeStroke(type: RelationType): string {
     }
     .scale-hud { bottom:16px; right:16px; }
     .node-hud  { bottom:16px; left:16px; }
-    .hud-label { font-size:9px; color:var(--text-muted); letter-spacing:0.1em; text-transform:uppercase; font-family:var(--font-display); }
-    .hud-val   { font-size:11px; color:var(--text-primary); font-family:var(--font-mono); }
+    .hud-label { font-size:12px; color:var(--text-secondary); letter-spacing:0.1em; text-transform:uppercase; font-family:var(--font-display); }
+    .hud-val   { font-size:15px; color:var(--text-primary); font-family:var(--font-mono); font-weight:700; }
     .hud-sep   { color:var(--border-mid); font-size:10px; }
 
     /* SVG */
@@ -335,14 +335,14 @@ export class TreeCanvasComponent implements OnInit, AfterViewInit, OnChanges, On
             const lx = (x1 + x2) / 2;
             const ly = (y1 + y2) / 2;
             const pill = eg.append('g').attr('data-label', e.id).attr('transform', `translate(${lx},${ly})`);
-            const tw = label.length * 5.5 + 12;
+            const tw = label.length * 6.5 + 16;
             pill.append('rect')
-                .attr('x', -tw / 2).attr('y', -8).attr('width', tw).attr('height', 14)
-                .attr('rx', 2).attr('fill', C_SURF).attr('stroke', C_DIM).attr('stroke-width', 0.5);
+                .attr('x', -tw / 2).attr('y', -9).attr('width', tw).attr('height', 16)
+                .attr('rx', 2).attr('fill', C_SURF).attr('stroke', C_MID).attr('stroke-width', 0.8);
             pill.append('text')
                 .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle').attr('y', -1)
-                .attr('font-size', '7').attr('letter-spacing', '0.06em')
-                .attr('fill', isPartner ? C_RED : 'rgba(255,255,255,0.3)')
+                .attr('font-size', '10').attr('letter-spacing', '0.06em')
+                .attr('fill', isPartner ? C_RED : 'rgba(255,255,255,0.75)')
                 .attr('font-family', "'Share Tech Mono', monospace")
                 .text(label);
         });
@@ -444,7 +444,7 @@ export class TreeCanvasComponent implements OnInit, AfterViewInit, OnChanges, On
                 grp.append('text')
                     .attr('x', ax + ar).attr('y', ay + ar + 1)
                     .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-                    .attr('font-size', '18').attr('fill', 'rgba(255,255,255,0.35)')
+                    .attr('font-size', '18').attr('fill', 'rgba(255,255,255,0.55)')
                     .attr('font-family', "'Orbitron', monospace")
                     .text(node.person.name.charAt(0).toUpperCase());
             }
