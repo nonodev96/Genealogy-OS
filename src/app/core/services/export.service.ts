@@ -219,6 +219,38 @@ export class ExportService {
 	}
 
 	// ─────────────────────────────────────────────
+	//  PDF EXPORT (print-based)
+	// ─────────────────────────────────────────────
+
+	downloadPDF(tree: FamilyTree, svgElement?: SVGSVGElement): void {
+		const svgContent = this.exportSVG(tree, svgElement);
+		const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<title>${tree.name}</title>
+<style>
+  @page { size: A4 landscape; margin: 10mm; }
+  body { margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #fff; }
+  svg { max-width: 100%; max-height: 100%; }
+</style>
+</head>
+<body>${svgContent}</body>
+</html>`;
+		const win = window.open("", "_blank");
+		if (!win) {
+			alert("Please allow pop-ups to export PDF, then use browser print.");
+			return;
+		}
+		win.document.write(html);
+		win.document.close();
+		win.onload = () => {
+			win.focus();
+			win.print();
+		};
+	}
+
+	// ─────────────────────────────────────────────
 	//  Helpers
 	// ─────────────────────────────────────────────
 

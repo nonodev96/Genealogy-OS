@@ -6,6 +6,9 @@ export interface TreeSnapshot {
 	persons: Person[];
 	relations: Relation[];
 	nodePositions?: Record<string, { x: number; y: number }>;
+	author?: string;
+	timestamp?: string;
+	description?: string;
 }
 
 @Injectable({ providedIn: "root" })
@@ -19,11 +22,19 @@ export class HistoryService implements OnDestroy {
 	readonly changed$ = this._changed$.asObservable();
 
 	/** Snapshot current tree BEFORE a user mutation. Clears the redo stack. */
-	snapshot(tree: FamilyTree): void {
-		this.getStack(this.undoMap, tree.id).push(this.toSnap(tree));
+	snapshot(tree: FamilyTree, author?: string, description?: string): void {
+		const snap = this.toSnap(tree);
+		snap.author = author;
+		snap.description = description;
+		this.getStack(this.undoMap, tree.id).push(snap);
 		this.trim(this.getStack(this.undoMap, tree.id));
 		this.redoMap.set(tree.id, []);
 		this._changed$.next();
+	}
+
+	/** Return all undo snapshots for a tree (oldest first). */
+	getHistory(treeId: string): TreeSnapshot[] {
+		return [...(this.undoMap.get(treeId) ?? [])];
 	}
 
 	canUndo(treeId: string): boolean {
@@ -72,6 +83,7 @@ export class HistoryService implements OnDestroy {
 			nodePositions: tree.nodePositions
 				? structuredClone(tree.nodePositions)
 				: undefined,
+			timestamp: new Date().toISOString(),
 		};
 	}
 

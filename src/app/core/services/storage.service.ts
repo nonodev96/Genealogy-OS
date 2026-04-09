@@ -1,7 +1,7 @@
 import type { OnDestroy } from "@angular/core";
 import { Injectable } from "@angular/core";
 import { BehaviorSubject, Subject } from "rxjs";
-import type { FamilyTree } from "../models/index";
+import type { FamilyTree, PersonComment } from "../models/index";
 
 const DB_NAME = "genealogy_db";
 const DB_VERSION = 1;
@@ -104,8 +104,10 @@ export class StorageService implements OnDestroy {
 		this.channel.postMessage({ type: "delete", treeId });
 	}
 
-	/** Broadcast a live node drag position to other tabs — no IDB write */
-	broadcastNodeMove(
+	/** Broadcast a new comment to other tabs */
+	broadcastComment(treeId: string, comment: PersonComment): void {
+		this.channel.postMessage({ type: "comment", treeId, comment });
+	}
 		treeId: string,
 		nodeId: string,
 		x: number,
@@ -203,11 +205,12 @@ export class StorageService implements OnDestroy {
 	// ── Cross-tab sync ────────────────────────────
 
 	private async handleSyncMessage(msg: {
-		type: "save" | "delete" | "nodeMove";
+		type: "save" | "delete" | "nodeMove" | "comment";
 		treeId: string;
 		nodeId?: string;
 		x?: number;
 		y?: number;
+		comment?: PersonComment;
 	}): Promise<void> {
 		const current = [...this._trees$.getValue()];
 		if (msg.type === "nodeMove") {
@@ -217,6 +220,18 @@ export class StorageService implements OnDestroy {
 				x: msg.x ?? 0,
 				y: msg.y ?? 0,
 			});
+			return;
+		}
+		if (msg.type === "comment" && msg.comment) {
+			const idx = current.findIndex((t) => t.id === msg.treeId);
+			if (idx >= 0) {
+				const tree = current[idx];
+				current[idx] = {
+					...tree,
+					comments: [...(tree.comments ?? []), msg.comment],
+				};
+				this._trees$.next([...current]);
+			}
 			return;
 		}
 		if (msg.type === "delete") {
