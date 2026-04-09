@@ -1,4 +1,3 @@
-import { CommonModule } from "@angular/common";
 import { Component, inject, type OnInit } from "@angular/core";
 import {
 	FormBuilder,
@@ -51,9 +50,7 @@ const OPTIONS: RelOption[] = [
 
 @Component({
 	selector: "app-relation-form",
-	standalone: true,
 	imports: [
-		CommonModule,
 		ReactiveFormsModule,
 		MatDialogModule,
 		MatFormFieldModule,
@@ -77,7 +74,9 @@ const OPTIONS: RelOption[] = [
         <mat-form-field appearance="outline" class="full">
           <mat-label>{{ 'RELATION.FORM.FROM' | translate }}</mat-label>
           <mat-select formControlName="from">
-            <mat-option *ngFor="let p of data.persons" [value]="p.id">{{ p.name }}</mat-option>
+            @for (p of data.persons; track p.id) {
+            <mat-option [value]="p.id">{{ p.name }}</mat-option>
+            }
           </mat-select>
         </mat-form-field>
 
@@ -85,9 +84,13 @@ const OPTIONS: RelOption[] = [
         <mat-form-field appearance="outline" class="full">
           <mat-label>{{ 'RELATION.FORM.TYPE' | translate }}</mat-label>
           <mat-select formControlName="type">
-            <mat-optgroup *ngFor="let g of groups" [label]="('RELATION.GROUP.' + g.name.toUpperCase()) | translate">
-              <mat-option *ngFor="let o of g.options" [value]="o.value">{{ ('RELATION.TYPE.' + o.value.toUpperCase()) | translate }}</mat-option>
+            @for (g of groups; track g.name) {
+            <mat-optgroup [label]="('RELATION.GROUP.' + g.name.toUpperCase()) | translate">
+              @for (o of g.options; track o.value) {
+              <mat-option [value]="o.value">{{ ('RELATION.TYPE.' + o.value.toUpperCase()) | translate }}</mat-option>
+              }
             </mat-optgroup>
+            }
           </mat-select>
         </mat-form-field>
 
@@ -95,16 +98,19 @@ const OPTIONS: RelOption[] = [
         <mat-form-field appearance="outline" class="full">
           <mat-label>{{ 'RELATION.FORM.TO' | translate }}</mat-label>
           <mat-select formControlName="to">
-            <mat-option *ngFor="let p of targets" [value]="p.id">{{ p.name }}</mat-option>
+            @for (p of targets; track p.id) {
+            <mat-option [value]="p.id">{{ p.name }}</mat-option>
+            }
           </mat-select>
         </mat-form-field>
 
-        <!-- Edge preview terminal -->
-        <div class="edge-preview" *ngIf="form.value.from && form.value.type && form.value.to">
+        @if (form.value.from && form.value.type && form.value.to) {
+        <div class="edge-preview">
           <span class="ep-node">{{ getName(form.value.from) }}</span>
           <span class="ep-arrow">──<span [style.color]="previewColor">{{ form.value.type }}</span>──▶</span>
           <span class="ep-node">{{ getName(form.value.to) }}</span>
         </div>
+        }
 
         <!-- Metadata -->
         <mat-form-field appearance="outline" class="half">

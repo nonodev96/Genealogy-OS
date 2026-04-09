@@ -1,35 +1,29 @@
 import { BreakpointObserver, Breakpoints } from "@angular/cdk/layout";
-import { CommonModule } from "@angular/common";
 import {
 	ChangeDetectionStrategy,
-	 ChangeDetectorRef,
+	ChangeDetectorRef,
 	Component,
 	inject,
-	 OnDestroy,
-	 OnInit,
+	type OnDestroy,
+	type OnInit,
 	ViewChild,
 } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import  { MatDialog } from "@angular/material/dialog";
+import { MatDialog } from "@angular/material/dialog";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatIconModule } from "@angular/material/icon";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatSidenavModule } from "@angular/material/sidenav";
-import  { MatSnackBar } from "@angular/material/snack-bar";
+import { MatSnackBar } from "@angular/material/snack-bar";
 import { MatTabsModule } from "@angular/material/tabs";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ActivatedRoute, RouterModule } from "@angular/router";
 import { TranslatePipe, TranslateService } from "@ngx-translate/core";
-import { fromEvent, Subscription } from "rxjs";
+import { fromEvent, Subscription, firstValueFrom } from "rxjs";
 import { filter } from "rxjs/operators";
 
-import type {
-	FamilyTree,
-	Person,
-	Relation,
-	TreeLayout,
-} from "@core/models";
-import  { CollaborationService } from "@core/services/collaboration.service";
+import type { FamilyTree, Person, Relation, RelationType, TreeLayout } from "@core/models";
+import { CollaborationService } from "@core/services/collaboration.service";
 import { ExportService } from "@core/services/export.service";
 import { HistoryService } from "@core/services/history.service";
 import { TreeService } from "@core/services/tree.service";
@@ -43,12 +37,11 @@ import {
 	type RelationFormData,
 } from "./relation-form/relation-form.component";
 import { TreeCanvasComponent } from "./tree-canvas/tree-canvas.component";
+import { ConfirmDialogComponent } from "../../shared/confirm-dialog.component";
 
 @Component({
 	selector: "app-tree-editor",
-	standalone: true,
 	imports: [
-		CommonModule,
 		RouterModule,
 		MatSidenavModule,
 		MatButtonModule,
@@ -62,7 +55,8 @@ import { TreeCanvasComponent } from "./tree-canvas/tree-canvas.component";
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: `
-    <div class="editor-shell" *ngIf="tree; else loading">
+    @if (tree) {
+    <div class="editor-shell">
 
       <!-- Top bar -->
       <header class="editor-header">
@@ -115,22 +109,24 @@ import { TreeCanvasComponent } from "./tree-canvas/tree-canvas.component";
                 <button class="add-btn" (click)="openAddPerson()">
                   <mat-icon>add</mat-icon> {{ 'TREE_EDITOR.PERSONS.ADD' | translate }}
                 </button>
-                <div class="list-empty" *ngIf="tree.persons.length === 0">
-                  <p>{{ 'TREE_EDITOR.PERSONS.EMPTY' | translate }}</p>
-                </div>
+                @if (tree.persons.length === 0) {
+                  <div class="list-empty">
+                    <p>{{ 'TREE_EDITOR.PERSONS.EMPTY' | translate }}</p>
+                  </div>
+                }
                 <div class="person-list stagger">
+                  @for (p of tree.persons; track p.id) {
                   <div
-                    *ngFor="let p of tree.persons"
                     class="person-row"
                     [class.is-selected]="selectedPersonId === p.id"
                     (click)="selectPerson(p.id)">
                     <div class="p-avatar">
-                      <img *ngIf="p.photoUrl" [src]="p.photoUrl" [alt]="p.name"/>
-                      <span *ngIf="!p.photoUrl">{{ p.name.charAt(0) }}</span>
+                      @if (p.photoUrl) { <img [src]="p.photoUrl" [alt]="p.name"/> }
+                      @if (!p.photoUrl) { <span>{{ p.name.charAt(0) }}</span> }
                     </div>
                     <div class="p-info">
                       <span class="p-name">{{ p.name }}</span>
-                      <span class="p-meta" *ngIf="p.birthDate">b.{{ p.birthDate.slice(0,4) }}</span>
+                      @if (p.birthDate) { <span class="p-meta">b.{{ p.birthDate.slice(0,4) }}</span> }
                     </div>
                     <button class="ctx-btn" [matMenuTriggerFor]="pm" (click)="$event.stopPropagation()">
                       <mat-icon>more_horiz</mat-icon>
@@ -141,6 +137,7 @@ import { TreeCanvasComponent } from "./tree-canvas/tree-canvas.component";
                       <button mat-menu-item (click)="deletePerson(p)" class="danger-item"><mat-icon>delete_outline</mat-icon> {{ 'TREE_EDITOR.PERSONS.CTX_DELETE' | translate }}</button>
                     </mat-menu>
                   </div>
+                  }
                 </div>
               </div>
             </mat-tab>
@@ -155,7 +152,8 @@ import { TreeCanvasComponent } from "./tree-canvas/tree-canvas.component";
                   <mat-icon>add_link</mat-icon> {{ 'TREE_EDITOR.RELATIONS.ADD' | translate }}
                 </button>
                 <div class="rel-list stagger">
-                  <div *ngFor="let r of tree.relations" class="rel-row">
+                  @for (r of tree.relations; track r.id) {
+                  <div class="rel-row">
                     <div class="rel-line" [style.background]="getEdgeColor(r.type)"></div>
                     <div class="rel-info">
                       <span class="rel-from">{{ getPersonName(r.from) }}</span>
@@ -170,40 +168,49 @@ import { TreeCanvasComponent } from "./tree-canvas/tree-canvas.component";
                       <button mat-menu-item (click)="deleteRelation(r)" class="danger-item"><mat-icon>delete_outline</mat-icon> {{ 'TREE_EDITOR.RELATIONS.CTX_DELETE' | translate }}</button>
                     </mat-menu>
                   </div>
+                  }
                 </div>
               </div>
             </mat-tab>
 
             <!-- Detail -->
-            <mat-tab *ngIf="selectedPerson">
+            @if (selectedPerson; as p) {
+            <mat-tab>
               <ng-template mat-tab-label>
                 <span class="red-dot" style="margin-right:6px"></span> {{ 'TREE_EDITOR.TABS.NODE' | translate }}
               </ng-template>
-              <div class="tab-pane detail-pane" *ngIf="selectedPerson as p">
+              <div class="tab-pane detail-pane">
                 <div class="detail-avatar">
-                  <img *ngIf="p.photoUrl" [src]="p.photoUrl" [alt]="p.name"/>
-                  <span *ngIf="!p.photoUrl">{{ p.name.charAt(0) }}</span>
+                  @if (p.photoUrl) { <img [src]="p.photoUrl" [alt]="p.name"/> }
+                  @if (!p.photoUrl) { <span>{{ p.name.charAt(0) }}</span> }
                 </div>
                 <h3 class="detail-name">{{ p.name }}</h3>
                 <p class="detail-id">id: {{ p.id.slice(0,12) }}…</p>
-                <div class="detail-meta" *ngIf="p.birthDate || p.deathDate">
-                  <div class="meta-row" *ngIf="p.birthDate"><span class="meta-k">{{ 'TREE_EDITOR.DETAIL.BORN' | translate }}</span><span class="meta-v">{{ p.birthDate }}</span></div>
-                  <div class="meta-row" *ngIf="p.deathDate"><span class="meta-k">{{ 'TREE_EDITOR.DETAIL.DIED' | translate }}</span><span class="meta-v">{{ p.deathDate }}</span></div>
-                </div>
-                <p class="detail-notes" *ngIf="p.notes">{{ p.notes }}</p>
-                <div class="detail-rels" *ngIf="getPersonRelations(p.id).length > 0">
-                  <p class="rels-header">{{ 'TREE_EDITOR.DETAIL.RELATIONS' | translate }}</p>
-                  <div *ngFor="let rel of getPersonRelations(p.id)" class="detail-rel-item">
-                    <span class="dri-type">{{ rel.type }}</span>
-                    <span class="dri-name">{{ rel.name }}</span>
+                @if (p.birthDate || p.deathDate) {
+                  <div class="detail-meta">
+                    @if (p.birthDate) { <div class="meta-row"><span class="meta-k">{{ 'TREE_EDITOR.DETAIL.BORN' | translate }}</span><span class="meta-v">{{ p.birthDate }}</span></div> }
+                    @if (p.deathDate) { <div class="meta-row"><span class="meta-k">{{ 'TREE_EDITOR.DETAIL.DIED' | translate }}</span><span class="meta-v">{{ p.deathDate }}</span></div> }
                   </div>
-                </div>
+                }
+                @if (p.notes) { <p class="detail-notes">{{ p.notes }}</p> }
+                @if (getPersonRelations(p.id).length > 0) {
+                  <div class="detail-rels">
+                    <p class="rels-header">{{ 'TREE_EDITOR.DETAIL.RELATIONS' | translate }}</p>
+                    @for (rel of getPersonRelations(p.id); track rel.type) {
+                    <div class="detail-rel-item">
+                      <span class="dri-type">{{ rel.type }}</span>
+                      <span class="dri-name">{{ rel.name }}</span>
+                    </div>
+                    }
+                  </div>
+                }
                 <div class="detail-actions">
                   <button class="act-btn" (click)="openEditPerson(p)"><mat-icon>edit</mat-icon> {{ 'TREE_EDITOR.DETAIL.EDIT' | translate }}</button>
                   <button class="act-btn" (click)="openAddRelation(p.id)"><mat-icon>link</mat-icon> {{ 'TREE_EDITOR.DETAIL.LINK' | translate }}</button>
                 </div>
               </div>
             </mat-tab>
+            }
 
           </mat-tab-group>
         </mat-sidenav>
@@ -223,13 +230,12 @@ import { TreeCanvasComponent } from "./tree-canvas/tree-canvas.component";
 
       </mat-sidenav-container>
     </div>
-
-    <ng-template #loading>
-      <div class="loading-screen dot-grid">
-        <div class="loader-glyph">⬡</div>
-        <p class="loader-txt">{{ 'TREE_EDITOR.LOADING' | translate }}</p>
-      </div>
-    </ng-template>
+    } @else {
+    <div class="loading-screen dot-grid">
+      <div class="loader-glyph">⧁</div>
+      <p class="loader-txt">{{ 'TREE_EDITOR.LOADING' | translate }}</p>
+    </div>
+    }
   `,
 	styles: [
 		`
@@ -399,6 +405,13 @@ import { TreeCanvasComponent } from "./tree-canvas/tree-canvas.component";
 export class TreeEditorComponent implements OnInit, OnDestroy {
 	@ViewChild("canvas") canvasRef?: TreeCanvasComponent;
 
+	private route = inject(ActivatedRoute);
+	private treeService = inject(TreeService);
+	private exportService = inject(ExportService);
+	private collab = inject(CollaborationService);
+	private dialog = inject(MatDialog);
+	private snack = inject(MatSnackBar);
+	private cdr = inject(ChangeDetectorRef);
 	private translate = inject(TranslateService);
 	private historyService = inject(HistoryService);
 	private breakpointObserver = inject(BreakpointObserver);
@@ -413,16 +426,6 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 	canRedo = false;
 
 	private subs = new Subscription();
-
-	constructor(
-		private route: ActivatedRoute,
-		private treeService: TreeService,
-		private exportService: ExportService,
-		private collab: CollaborationService,
-		private dialog: MatDialog,
-		private snack: MatSnackBar,
-		public cdr: ChangeDetectorRef,
-	) {}
 
 	ngOnInit(): void {
 		this.subs.add(
@@ -441,9 +444,12 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 		this.subs.add(
 			this.treeService.activeTree$.subscribe((tree) => {
 				this.tree = tree ?? null;
-				this.layout = tree
-					? new TreeLayoutService().computeLayout(tree.persons, tree.relations)
-					: null;
+				this.cdr.markForCheck();
+			}),
+		);
+		this.subs.add(
+			this.treeService.activeLayout$.subscribe((layout) => {
+				this.layout = layout;
 				this.cdr.markForCheck();
 			}),
 		);
@@ -501,10 +507,10 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 	getPersonName(id: string): string {
 		return this.tree?.persons.find((p) => p.id === id)?.name ?? "?";
 	}
-	getEdgeColor(type: any): string {
+	getEdgeColor(type: RelationType): string {
 		return TreeLayoutService.edgeColor(type);
 	}
-	getRelLabel(type: any): string {
+	getRelLabel(type: RelationType): string {
 		return TreeLayoutService.label(type);
 	}
 
@@ -563,7 +569,19 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 	}
 
 	async deletePerson(p: Person): Promise<void> {
-		if (!confirm(`delete "${p.name}"? all edges will also be removed.`)) return;
+		const confirmed = await firstValueFrom(
+			this.dialog
+				.open(ConfirmDialogComponent, {
+					data: {
+						message: this.translate.instant("CONFIRM.DELETE_PERSON", {
+							name: p.name,
+						}),
+					},
+					width: "380px",
+				})
+				.afterClosed(),
+		);
+		if (!confirmed) return;
 		await this.treeService.deletePerson(this.tree!.id, p.id);
 		if (this.selectedPersonId === p.id) this.selectedPersonId = null;
 		this.snack.open(
@@ -631,7 +649,15 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 	}
 
 	async deleteRelation(rel: Relation): Promise<void> {
-		if (!confirm("delete this relation?")) return;
+		const confirmed = await firstValueFrom(
+			this.dialog
+				.open(ConfirmDialogComponent, {
+					data: { message: this.translate.instant("CONFIRM.DELETE_RELATION") },
+					width: "380px",
+				})
+				.afterClosed(),
+		);
+		if (!confirmed) return;
 		await this.treeService.deleteRelation(this.tree!.id, rel.id);
 		this.snack.open(
 			this.translate.instant("TREE_EDITOR.SNACK.RELATION_DELETED"),

@@ -1,4 +1,4 @@
-import { CommonModule } from "@angular/common";
+import { AsyncPipe, DatePipe } from "@angular/common";
 import {
 	ChangeDetectionStrategy,
 	ChangeDetectorRef,
@@ -8,7 +8,6 @@ import {
 } from "@angular/core";
 import {
 	FormBuilder,
-	FormGroup,
 	ReactiveFormsModule,
 	Validators,
 } from "@angular/forms";
@@ -32,13 +31,12 @@ import type { FamilyTree } from "@core/models";
 import { ExportService } from "@core/services/export.service";
 import { StorageService } from "@core/services/storage.service";
 import { TreeService } from "@core/services/tree.service";
+import { ConfirmDialogComponent } from "../../shared/confirm-dialog.component";
 
 /* ── New-tree dialog ───────────────────────────────── */
 @Component({
 	selector: "app-new-tree-dialog",
-	standalone: true,
 	imports: [
-		CommonModule,
 		ReactiveFormsModule,
 		MatDialogModule,
 		MatFormFieldModule,
@@ -81,16 +79,12 @@ import { TreeService } from "@core/services/tree.service";
 	],
 })
 export class NewTreeDialogComponent {
-	form: FormGroup;
-	constructor(
-		fb: FormBuilder,
-		private ref: MatDialogRef<NewTreeDialogComponent>,
-	) {
-		this.form = fb.group({
-			name: ["", Validators.required],
-			description: [""],
-		});
-	}
+	private fb = inject(FormBuilder);
+	private ref = inject(MatDialogRef<NewTreeDialogComponent>);
+	form = this.fb.group({
+		name: ["", Validators.required],
+		description: [""],
+	});
 	save(): void {
 		if (this.form.invalid) return;
 		this.ref.close(this.form.value);
@@ -100,9 +94,7 @@ export class NewTreeDialogComponent {
 /* ── Import dialog ─────────────────────────────────── */
 @Component({
 	selector: "app-import-dialog",
-	standalone: true,
 	imports: [
-		CommonModule,
 		MatDialogModule,
 		MatButtonModule,
 		MatIconModule,
@@ -145,8 +137,8 @@ export class NewTreeDialogComponent {
 	],
 })
 export class ImportDialogComponent {
+	private ref = inject(MatDialogRef<ImportDialogComponent>);
 	file: File | null = null;
-	constructor(private ref: MatDialogRef<ImportDialogComponent>) {}
 	onFileChange(e: Event): void {
 		this.file = (e.target as HTMLInputElement).files?.[0] ?? null;
 	}
@@ -162,9 +154,9 @@ export class ImportDialogComponent {
 /* ── Dashboard ─────────────────────────────────────── */
 @Component({
 	selector: "app-dashboard",
-	standalone: true,
 	imports: [
-		CommonModule,
+		AsyncPipe,
+		DatePipe,
 		RouterModule,
 		MatButtonModule,
 		MatIconModule,
@@ -220,74 +212,82 @@ export class ImportDialogComponent {
         <span class="status-time">{{ now | date:'HH:mm:ss' }}</span>
       </div>
 
-      <!-- Empty state -->
-      <div class="empty-state" *ngIf="(trees$ | async)?.length === 0">
-        <div class="empty-glyph">
-          <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-            <circle cx="32" cy="14" r="4" stroke="var(--border-bright)" stroke-width="1"/>
-            <circle cx="14" cy="42" r="4" stroke="var(--border-bright)" stroke-width="1"/>
-            <circle cx="50" cy="42" r="4" stroke="var(--border-bright)" stroke-width="1"/>
-            <line x1="32" y1="18" x2="20" y2="38" stroke="var(--border-dim)" stroke-width="1" stroke-dasharray="3,3"/>
-            <line x1="32" y1="18" x2="44" y2="38" stroke="var(--border-dim)" stroke-width="1" stroke-dasharray="3,3"/>
-            <circle cx="32" cy="14" r="1.5" fill="var(--red)" opacity="0.6"/>
-          </svg>
-        </div>
-        <p class="empty-title cursor-blink">{{ 'DASHBOARD.EMPTY.TITLE' | translate }}</p>
-        <p class="empty-sub">{{ 'DASHBOARD.EMPTY.SUBTITLE' | translate }}</p>
-        <button class="btn-create lg" (click)="openNewTree()">
-          <span class="btn-plus">+</span> {{ 'DASHBOARD.EMPTY.CTA' | translate }}
-        </button>
-      </div>
-
-      <!-- Tree grid -->
-      <main class="tree-grid stagger" *ngIf="(trees$ | async) as trees">
-        <article *ngFor="let tree of trees" class="tree-card" (click)="openTree(tree)">
-
-          <!-- Card header line -->
-          <div class="card-topbar">
-            <span class="card-id">{{ tree.id.slice(0,8) }}</span>
-            <span class="card-status" [class.shared]="tree.permissions.collaborationToken">
-              {{ tree.permissions.collaborationToken ? ('TREE.CARD.SHARED' | translate) : ('TREE.CARD.LOCAL' | translate) }}
-            </span>
-            <button mat-icon-button [matMenuTriggerFor]="ctxMenu"
-              (click)="$event.stopPropagation()" class="card-menu-btn">
-              <mat-icon>more_horiz</mat-icon>
+      <!-- Empty state + Tree grid -->
+      @if (trees$ | async; as trees) {
+        @if (trees.length === 0) {
+          <div class="empty-state">
+            <div class="empty-glyph">
+              <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                <circle cx="32" cy="14" r="4" stroke="var(--border-bright)" stroke-width="1"/>
+                <circle cx="14" cy="42" r="4" stroke="var(--border-bright)" stroke-width="1"/>
+                <circle cx="50" cy="42" r="4" stroke="var(--border-bright)" stroke-width="1"/>
+                <line x1="32" y1="18" x2="20" y2="38" stroke="var(--border-dim)" stroke-width="1" stroke-dasharray="3,3"/>
+                <line x1="32" y1="18" x2="44" y2="38" stroke="var(--border-dim)" stroke-width="1" stroke-dasharray="3,3"/>
+                <circle cx="32" cy="14" r="1.5" fill="var(--red)" opacity="0.6"/>
+              </svg>
+            </div>
+            <p class="empty-title cursor-blink">{{ 'DASHBOARD.EMPTY.TITLE' | translate }}</p>
+            <p class="empty-sub">{{ 'DASHBOARD.EMPTY.SUBTITLE' | translate }}</p>
+            <button class="btn-create lg" (click)="openNewTree()">
+              <span class="btn-plus">+</span> {{ 'DASHBOARD.EMPTY.CTA' | translate }}
             </button>
-            <mat-menu #ctxMenu="matMenu">
-              <button mat-menu-item (click)="openTree(tree)"><mat-icon>open_in_new</mat-icon> {{ 'TREE.CTX.OPEN' | translate }}</button>
-              <button mat-menu-item (click)="duplicateTree(tree)"><mat-icon>content_copy</mat-icon> {{ 'TREE.CTX.DUPLICATE' | translate }}</button>
-              <button mat-menu-item (click)="exportJSON(tree)"><mat-icon>download</mat-icon> {{ 'TREE.CTX.EXPORT' | translate }}</button>
-              <button mat-menu-item (click)="deleteTree(tree)" class="danger-item"><mat-icon>delete_outline</mat-icon> {{ 'TREE.CTX.DELETE' | translate }}</button>
-            </mat-menu>
+          </div>
+        } @else {
+          <!-- Tree grid -->
+          <main class="tree-grid stagger">
+            @for (tree of trees; track tree.id) {
+              <article class="tree-card" (click)="openTree(tree)">
+
+                <!-- Card header line -->
+                <div class="card-topbar">
+                  <span class="card-id">{{ tree.id.slice(0,8) }}</span>
+                  <span class="card-status" [class.shared]="tree.permissions.collaborationToken">
+                    {{ tree.permissions.collaborationToken ? ('TREE.CARD.SHARED' | translate) : ('TREE.CARD.LOCAL' | translate) }}
+                  </span>
+                  <button mat-icon-button [matMenuTriggerFor]="ctxMenu"
+                    (click)="$event.stopPropagation()" class="card-menu-btn">
+                    <mat-icon>more_horiz</mat-icon>
+                  </button>
+                  <mat-menu #ctxMenu="matMenu">
+                    <button mat-menu-item (click)="openTree(tree)"><mat-icon>open_in_new</mat-icon> {{ 'TREE.CTX.OPEN' | translate }}</button>
+                    <button mat-menu-item (click)="duplicateTree(tree)"><mat-icon>content_copy</mat-icon> {{ 'TREE.CTX.DUPLICATE' | translate }}</button>
+                    <button mat-menu-item (click)="exportJSON(tree)"><mat-icon>download</mat-icon> {{ 'TREE.CTX.EXPORT' | translate }}</button>
+                    <button mat-menu-item (click)="deleteTree(tree)" class="danger-item"><mat-icon>delete_outline</mat-icon> {{ 'TREE.CTX.DELETE' | translate }}</button>
+                  </mat-menu>
+                </div>
+
+                <!-- Tree name -->
+                <h2 class="card-name">{{ tree.name }}</h2>
+                @if (tree.description) {
+                  <p class="card-desc">{{ tree.description }}</p>
+                }
+
+                <!-- Stats row -->
+                <div class="card-stats">
+                  <div class="stat">
+                    <span class="stat-val">{{ tree.persons.length }}</span>
+                    <span class="stat-key">{{ 'TREE.CARD.PERSONS' | translate }}</span>
+                  </div>
+                  <div class="stat-divider"></div>
+                  <div class="stat">
+                    <span class="stat-val">{{ tree.relations.length }}</span>
+                    <span class="stat-key">{{ 'TREE.CARD.RELATIONS' | translate }}</span>
+                  </div>
+                  <div class="stat-divider"></div>
+                  <div class="stat">
+                    <span class="stat-val">{{ tree.updatedAt | date:'MMM dd' }}</span>
+                    <span class="stat-key">{{ 'TREE.CARD.MODIFIED' | translate }}</span>
+                  </div>
           </div>
 
-          <!-- Tree name -->
-          <h2 class="card-name">{{ tree.name }}</h2>
-          <p class="card-desc" *ngIf="tree.description">{{ tree.description }}</p>
+                <!-- Open indicator -->
+                <div class="card-arrow">→</div>
 
-          <!-- Stats row -->
-          <div class="card-stats">
-            <div class="stat">
-              <span class="stat-val">{{ tree.persons.length }}</span>
-              <span class="stat-key">{{ 'TREE.CARD.PERSONS' | translate }}</span>
-            </div>
-            <div class="stat-divider"></div>
-            <div class="stat">
-              <span class="stat-val">{{ tree.relations.length }}</span>
-              <span class="stat-key">{{ 'TREE.CARD.RELATIONS' | translate }}</span>
-            </div>
-            <div class="stat-divider"></div>
-            <div class="stat">
-              <span class="stat-val">{{ tree.updatedAt | date:'MMM dd' }}</span>
-              <span class="stat-key">{{ 'TREE.CARD.MODIFIED' | translate }}</span>
-            </div>
-          </div>
-
-          <!-- Open indicator -->
-          <div class="card-arrow">→</div>
-
-        </article>
-      </main>
+              </article>
+            }
+          </main>
+        }
+      }
 
     </div>
   `,
@@ -510,7 +510,7 @@ export class DashboardComponent implements OnInit {
 			.subscribe(async ({ name, description }) => {
 				const tree = await this.treeService.createTree(name, description);
 				this.snack
-					.open(`tree "${tree.name}" initialized`, "open", { duration: 4000 })
+					.open(this.translate.instant("DASHBOARD.SNACK.TREE_CREATED", { name: tree.name }), this.translate.instant("DASHBOARD.SNACK.OPEN_ACTION"), { duration: 4000 })
 					.onAction()
 					.subscribe(() => this.openTree(tree));
 				this.cdr.markForCheck();
@@ -520,15 +520,18 @@ export class DashboardComponent implements OnInit {
 	async duplicateTree(tree: FamilyTree): Promise<void> {
 		const copy = await this.treeService.duplicateTree(tree.id);
 		if (copy)
-			this.snack.open(`duplicated → "${copy.name}"`, "", { duration: 3000 });
+			this.snack.open(this.translate.instant("DASHBOARD.SNACK.TREE_DUPLICATED", { name: copy.name }), "", { duration: 3000 });
 		this.cdr.markForCheck();
 	}
 
 	async deleteTree(tree: FamilyTree): Promise<void> {
-		if (!confirm(`delete "${tree.name}"? this action cannot be undone.`))
-			return;
+		const confirmed = await this.dialog.open(ConfirmDialogComponent, {
+			data: { message: this.translate.instant('CONFIRM.DELETE_TREE', { name: tree.name }) },
+			width: '380px',
+		}).afterClosed().toPromise();
+		if (!confirmed) return;
 		await this.treeService.deleteTree(tree.id);
-		this.snack.open("tree deleted", "", { duration: 2500 });
+		this.snack.open(this.translate.instant("DASHBOARD.SNACK.TREE_DELETED"), "", { duration: 2500 });
 		this.cdr.markForCheck();
 	}
 
@@ -544,7 +547,7 @@ export class DashboardComponent implements OnInit {
 			.subscribe(async (file: File) => {
 				const tree = await this.exportService.importJSON(file);
 				if (!tree) {
-					this.snack.open("error: invalid json file", "", { duration: 3000 });
+					this.snack.open(this.translate.instant("DASHBOARD.SNACK.IMPORT_ERROR"), "", { duration: 3000 });
 					return;
 				}
 				tree.id = crypto.randomUUID();
@@ -558,7 +561,7 @@ export class DashboardComponent implements OnInit {
 				};
 				await this.storage.saveTree(tree);
 				this.snack
-					.open(`imported "${tree.name}"`, "open", { duration: 4000 })
+					.open(this.translate.instant("DASHBOARD.SNACK.IMPORTED", { name: tree.name }), this.translate.instant("DASHBOARD.SNACK.OPEN_ACTION"), { duration: 4000 })
 					.onAction()
 					.subscribe(() => this.openTree(tree));
 				this.cdr.markForCheck();

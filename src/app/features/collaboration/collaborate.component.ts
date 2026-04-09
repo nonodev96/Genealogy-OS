@@ -1,5 +1,4 @@
-import { CommonModule } from "@angular/common";
-import { Component, type OnInit } from "@angular/core";
+import { Component, inject, type OnInit } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { ActivatedRoute, Router, RouterModule } from "@angular/router";
@@ -11,9 +10,7 @@ import { StorageService } from "@core/services/storage.service";
 
 @Component({
 	selector: "app-collaborate",
-	standalone: true,
 	imports: [
-		CommonModule,
 		RouterModule,
 		MatButtonModule,
 		MatIconModule,
@@ -43,27 +40,27 @@ import { StorageService } from "@core/services/storage.service";
         <div class="term-body">
 
           <!-- Loading -->
-          <ng-container *ngIf="state === 'loading'">
+          @if (state === 'loading') {
             <div class="term-line"><span class="prompt">$</span> {{ 'COLLABORATE.LOADING' | translate }}</div>
             <div class="term-line blink">█</div>
-          </ng-container>
+          }
 
           <!-- Invalid -->
-          <ng-container *ngIf="state === 'invalid'">
+          @if (state === 'invalid') {
             <div class="term-line err"><span class="prompt err-p">✗</span> {{ 'COLLABORATE.INVALID.ERROR' | translate }}</div>
             <div class="term-line muted">{{ 'COLLABORATE.INVALID.HINT1' | translate }}</div>
             <div class="term-line muted">{{ 'COLLABORATE.INVALID.HINT2' | translate }}</div>
-          </ng-container>
+          }
 
           <!-- Valid -->
-          <ng-container *ngIf="state === 'valid' && session">
+          @if (state === 'valid' && session) {
             <div class="term-line ok"><span class="prompt ok-p">✓</span> {{ 'COLLABORATE.VALID.VERIFIED' | translate }}</div>
             <div class="term-line muted">→ tree_id: {{ session.treeId.slice(0,12) }}…</div>
             <div class="term-line muted">→ role:    <span class="role-tag" [class]="session.role">{{ session.role }}</span></div>
             <div class="term-line muted">→ name:    {{ treeName }}</div>
             <div class="term-line ok">&nbsp;</div>
             <div class="term-line ok">{{ 'COLLABORATE.VALID.ACCESS' | translate }}</div>
-          </ng-container>
+          }
 
         </div>
 
@@ -72,9 +69,11 @@ import { StorageService } from "@core/services/storage.service";
           <button class="t-btn secondary" routerLink="/dashboard">
             {{ 'COLLABORATE.DASHBOARD_BTN' | translate }}
           </button>
-          <button class="t-btn primary" *ngIf="state === 'valid'" (click)="openTree()">
+          @if (state === 'valid') {
+          <button class="t-btn primary" (click)="openTree()">
             {{ 'COLLABORATE.VALID.OPEN' | translate }}
           </button>
+          }
         </div>
       </div>
 
@@ -167,12 +166,10 @@ export class CollaborateComponent implements OnInit {
 	session: CollaborationSession | null = null;
 	treeName = "";
 
-	constructor(
-		private route: ActivatedRoute,
-		private router: Router,
-		private collab: CollaborationService,
-		private storage: StorageService,
-	) {}
+	private route = inject(ActivatedRoute);
+	private router = inject(Router);
+	private collab = inject(CollaborationService);
+	private storage = inject(StorageService);
 
 	ngOnInit(): void {
 		this.storage.ready$.pipe(filter(Boolean), take(1)).subscribe(() => {

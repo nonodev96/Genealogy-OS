@@ -1,10 +1,10 @@
-import { Injectable } from "@angular/core";
+import { Injectable, inject } from "@angular/core";
 import type { FamilyTree, RelationType } from "@core/models";
 import { NODE_H, NODE_W, TreeLayoutService } from "./tree-layout.service";
 
 @Injectable({ providedIn: "root" })
 export class ExportService {
-	constructor(private layoutService: TreeLayoutService) {}
+	private layoutService = inject(TreeLayoutService);
 
 	// ─────────────────────────────────────────────
 	//  SVG EXPORT

@@ -1,4 +1,3 @@
-import { CommonModule } from "@angular/common";
 import { Component, inject, type OnInit } from "@angular/core";
 import {
 	FormBuilder,
@@ -17,7 +16,8 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
-import { TranslatePipe } from "@ngx-translate/core";
+import { MatSnackBar } from "@angular/material/snack-bar";
+import { TranslatePipe, TranslateService } from "@ngx-translate/core";
 import type { Person } from "@core/models";
 import { StorageService } from "@core/services/storage.service";
 
@@ -28,9 +28,7 @@ export interface PersonFormData {
 
 @Component({
 	selector: "app-person-form",
-	standalone: true,
 	imports: [
-		CommonModule,
 		ReactiveFormsModule,
 		MatDialogModule,
 		MatFormFieldModule,
@@ -53,21 +51,27 @@ export interface PersonFormData {
         <!-- Photo -->
         <div class="photo-area">
           <div class="avatar-zone" (click)="photoInput.click()" [class.has-photo]="!!previewUrl">
-            <img *ngIf="previewUrl" [src]="previewUrl" class="avatar-img"/>
-            <div *ngIf="!previewUrl" class="avatar-placeholder">
+            @if (previewUrl) {
+            <img [src]="previewUrl" class="avatar-img"/>
+            }
+            @if (!previewUrl) {
+            <div class="avatar-placeholder">
               <span class="avatar-initial">{{ form.value.name?.charAt(0)?.toUpperCase() || '?' }}</span>
             </div>
+            }
             <div class="avatar-overlay">
               <mat-icon>photo_camera</mat-icon>
             </div>
           </div>
           <div class="photo-side">
             <span class="upload-hint">{{ 'PERSON.FORM.UPLOAD' | translate }}</span>
-            <div class="photo-actions" *ngIf="previewUrl">
+            @if (previewUrl) {
+            <div class="photo-actions">
               <button mat-button type="button" (click)="clearPhoto()">
                 <mat-icon>close</mat-icon> {{ 'COMMON.REMOVE' | translate }}
               </button>
             </div>
+            }
           </div>
           <input #photoInput type="file" accept="image/*" hidden (change)="onPhotoChange($event)"/>
         </div>
@@ -76,7 +80,9 @@ export interface PersonFormData {
         <mat-form-field appearance="outline" class="full">
           <mat-label>{{ 'PERSON.FORM.NAME' | translate }}</mat-label>
           <input matInput formControlName="name" placeholder="e.g. Juan García López" autocomplete="off"/>
-          <mat-error *ngIf="form.get('name')?.hasError('required')">{{ 'COMMON.REQUIRED' | translate }}</mat-error>
+          @if (form.get('name')?.hasError('required')) {
+          <mat-error>{{ 'COMMON.REQUIRED' | translate }}</mat-error>
+          }
         </mat-form-field>
 
         <!-- Gender -->
@@ -168,6 +174,8 @@ export class PersonFormComponent implements OnInit {
 	private fb = inject(FormBuilder);
 	private storage = inject(StorageService);
 	private dialogRef = inject(MatDialogRef<PersonFormComponent>);
+	private snack = inject(MatSnackBar);
+	private translate = inject(TranslateService);
 	data = inject<PersonFormData>(MAT_DIALOG_DATA);
 
 	form!: FormGroup;
@@ -191,7 +199,7 @@ export class PersonFormComponent implements OnInit {
 		const file = (event.target as HTMLInputElement).files?.[0];
 		if (!file) return;
 		if (file.size > 2 * 1024 * 1024) {
-			alert("max 2 MB");
+			this.snack.open(this.translate.instant('CONFIRM.PHOTO_TOO_LARGE'), '', { duration: 3000 });
 			return;
 		}
 		this.previewUrl = await this.storage.fileToBase64(file);

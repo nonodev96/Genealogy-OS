@@ -1,59 +1,85 @@
-# Genealogy OS
+# genealogy.os
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.6.
+> Collaborative family tree editor — Angular 21 · D3.js · Angular Material · IndexedDB
 
-## Development server
+A privacy-first, offline-capable SPA for building and exploring family trees. No server required — everything runs in the browser.
 
-To start a local development server, run:
+## Features
 
-```bash
-ng serve
-```
+- **Multiple trees** — create, duplicate, import and export independent genealogy projects
+- **Rich person profiles** — name, gender, birth/death dates, biography, photo
+- **13 relation types** — parent, child, partner, sibling, adoptive, step, guardian and more
+- **D3.js canvas** — interactive SVG tree with zoom, pan, drag-to-reposition, fit-to-screen
+- **Undo / redo** — full history per tree with keyboard shortcuts (`Ctrl+Z` / `Ctrl+Shift+Z`)
+- **Collaboration links** — share read-only or editor tokens via URL; cross-tab sync via `BroadcastChannel`
+- **Export** — download as `.svg`, `.txt` or `.json` backup
+- **i18n** — English and Spanish, switchable at runtime
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Tech stack
 
-## Code scaffolding
+| Layer              | Technology                                 |
+| ------------------ | ------------------------------------------ |
+| Framework          | Angular 21 (standalone, signals)           |
+| UI                 | Angular Material 21                        |
+| Visualization      | D3.js v7                                   |
+| Storage            | IndexedDB (idb) with LocalStorage fallback |
+| i18n               | @ngx-translate/core                        |
+| Linter / Formatter | Biome                                      |
+| Test runner        | Vitest                                     |
+| Package manager    | pnpm                                       |
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Getting started
 
 ```bash
-ng test
+# Install dependencies
+pnpm install
+
+# Start dev server — http://localhost:4200
+pnpm start
 ```
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
+## Scripts
 
 ```bash
-ng e2e
+pnpm start          # Dev server with live reload
+pnpm build          # Production bundle → dist/
+pnpm test           # Unit tests (Vitest)
+pnpm lint           # Biome lint
+pnpm lint:fix       # Biome lint with auto-fix
+pnpm format         # Biome format
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+## Project structure
 
-## Additional Resources
+```
+src/app/
+├── core/
+│   ├── models/          # Shared TypeScript types (Person, Relation, FamilyTree…)
+│   └── services/
+│       ├── storage.service.ts        # IndexedDB + LocalStorage persistence
+│       ├── tree.service.ts           # CRUD orchestration + active tree state
+│       ├── tree-layout.service.ts    # Auto-layout algorithm from relative edges
+│       ├── history.service.ts        # Undo/redo stack per tree
+│       ├── export.service.ts         # SVG, plain-text and JSON export
+│       └── collaboration.service.ts  # Tokens, sessions, share URLs
+├── features/
+│   ├── dashboard/                    # Project list — create, import, manage
+│   ├── tree-editor/                  # Editor shell + sidebar + D3 canvas
+│   │   ├── person-form/              # Add / edit person dialog
+│   │   ├── relation-form/            # Add / edit relation dialog
+│   │   └── tree-canvas/             # D3 SVG renderer
+│   └── collaboration/               # Landing page for shared links
+└── shared/
+    └── confirm-dialog.component.ts  # Reusable confirmation dialog
+```
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## Keyboard shortcuts
+
+| Shortcut                  | Action |
+| ------------------------- | ------ |
+| `Ctrl+Z`                  | Undo   |
+| `Ctrl+Shift+Z` / `Ctrl+Y` | Redo   |
+
+## Relation types
+
+`parentOf` · `childOf` · `partnerOf` · `siblingOf` · `halfSiblingOf` · `ancestorOf` · `descendantOf` · `adoptiveParentOf` · `adoptiveChildOf` · `stepParentOf` · `stepChildOf` · `guardianOf` · `wardOf`

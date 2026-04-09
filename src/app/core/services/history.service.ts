@@ -67,10 +67,10 @@ export class HistoryService implements OnDestroy {
 
 	toSnap(tree: FamilyTree): TreeSnapshot {
 		return {
-			persons: JSON.parse(JSON.stringify(tree.persons)),
-			relations: JSON.parse(JSON.stringify(tree.relations)),
+			persons: structuredClone(tree.persons),
+			relations: structuredClone(tree.relations),
 			nodePositions: tree.nodePositions
-				? JSON.parse(JSON.stringify(tree.nodePositions))
+				? structuredClone(tree.nodePositions)
 				: undefined,
 		};
 	}

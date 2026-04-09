@@ -1,4 +1,4 @@
-import { CommonModule } from "@angular/common";
+import { DecimalPipe } from "@angular/common";
 import {
 	type AfterViewInit,
 	Component,
@@ -66,8 +66,7 @@ function edgeStroke(type: RelationType): string {
 
 @Component({
 	selector: "app-tree-canvas",
-	standalone: true,
-	imports: [CommonModule, MatIconModule, MatTooltipModule, TranslatePipe],
+	imports: [DecimalPipe, MatIconModule, MatTooltipModule, TranslatePipe],
 	template: `
     <div class="canvas-wrap" #wrapper>
 
@@ -87,13 +86,15 @@ function edgeStroke(type: RelationType): string {
       </div>
 
       <!-- Node count HUD -->
-      <div class="node-hud" *ngIf="layout">
+      @if (layout) {
+      <div class="node-hud">
         <span class="hud-label">{{ 'CANVAS.NODES' | translate }}</span>
         <span class="hud-val">{{ layout.nodes.size }}</span>
         <span class="hud-sep">|</span>
         <span class="hud-label">{{ 'CANVAS.EDGES' | translate }}</span>
         <span class="hud-val">{{ layout.edges.length }}</span>
       </div>
+      }
 
       <!-- Link style selector -->
       <div class="link-style-hud">
@@ -138,7 +139,8 @@ function edgeStroke(type: RelationType): string {
       </svg>
 
       <!-- Empty state -->
-      <div class="empty-overlay" *ngIf="!layout || layout.nodes.size === 0">
+      @if (!layout || layout.nodes.size === 0) {
+      <div class="empty-overlay">
         <svg class="empty-svg" width="80" height="80" viewBox="0 0 80 80">
           <circle cx="40" cy="16" r="6" stroke="rgba(255,255,255,0.1)" stroke-width="1" fill="none"/>
           <circle cx="18" cy="56" r="6" stroke="rgba(255,255,255,0.1)" stroke-width="1" fill="none"/>
@@ -150,6 +152,7 @@ function edgeStroke(type: RelationType): string {
         <p class="empty-line">{{ 'CANVAS.EMPTY_TITLE' | translate }}</p>
         <p class="empty-sub">{{ 'CANVAS.EMPTY_SUB' | translate }}</p>
       </div>
+      }
 
     </div>
   `,

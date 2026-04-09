@@ -5,6 +5,7 @@
     "CREATE": "Crear",
     "IMPORT": "Importar",
     "REMOVE": "Eliminar",
+    "DELETE": "Eliminar",
     "REQUIRED": "Campo requerido",
     "NOTES": "Notas"
   },
@@ -104,6 +105,14 @@
       "TITLE": "no_trees_found",
       "SUBTITLE": "inicializa tu primer árbol genealógico",
       "CTA": "initialize_tree"
+    },
+    "SNACK": {
+      "TREE_CREATED": "árbol \u00ab{{name}}\u00bb inicializado",
+      "TREE_DUPLICATED": "duplicado → \u00ab{{name}}\u00bb",
+      "TREE_DELETED": "árbol eliminado",
+      "IMPORT_ERROR": "error: archivo json inválido",
+      "IMPORTED": "importado \u00ab{{name}}\u00bb",
+      "OPEN_ACTION": "abrir"
     }
   },
   "COLLABORATE": {
@@ -180,5 +189,12 @@
     "LINK_STYLE": "enlaces",
     "LINK_CURVED": "curvo",
     "LINK_ORTHOGONAL": "ortogonal"
+  },
+  "CONFIRM": {
+    "DELETE_TREE": "¿Eliminar \u00ab{{name}}\u00bb? Esta acción no se puede deshacer.",
+    "DELETE_PERSON": "¿Eliminar \u00ab{{name}}\u00bb? Se eliminarán todas sus relaciones.",
+    "DELETE_RELATION": "¿Eliminar esta relación?",
+    "PHOTO_TOO_LARGE": "La foto no puede superar 2 MB.",
+    "BTN_DELETE": "Eliminar"
   }
 }

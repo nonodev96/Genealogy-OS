@@ -1,7 +1,6 @@
 import { Injectable, inject } from "@angular/core";
 import { BehaviorSubject, combineLatest, type Observable } from "rxjs";
 import { map } from "rxjs/operators";
-import { v4 as uuidv4 } from "uuid";
 import type {
 	FamilyTree,
 	Person,
@@ -47,7 +46,7 @@ export class TreeService {
 	async createTree(name: string, description?: string): Promise<FamilyTree> {
 		const ownerToken = this.generateToken();
 		const tree: FamilyTree = {
-			id: uuidv4(),
+			id: crypto.randomUUID(),
 			name,
 			description,
 			persons: [],
@@ -68,8 +67,8 @@ export class TreeService {
 		const source = this.storage.getTree(treeId);
 		if (!source) return null;
 		const copy: FamilyTree = {
-			...JSON.parse(JSON.stringify(source)),
-			id: uuidv4(),
+			...structuredClone(source),
+			id: crypto.randomUUID(),
 			name: `${source.name} (copia)`,
 			permissions: {
 				ownerToken: this.generateToken(),
@@ -111,7 +110,7 @@ export class TreeService {
 		this.history.snapshot(tree);
 		const person: Person = {
 			...data,
-			id: uuidv4(),
+			id: crypto.randomUUID(),
 			createdAt: new Date().toISOString(),
 			updatedAt: new Date().toISOString(),
 		};
@@ -168,7 +167,7 @@ export class TreeService {
 
 		this.history.snapshot(tree);
 		const relation: Relation = {
-			id: uuidv4(),
+			id: crypto.randomUUID(),
 			from,
 			to,
 			type,
