@@ -231,6 +231,13 @@
     "ACCENT": "acento",
     "NODE_BG": "fondo_nodo",
     "EDGE_COLOR": "color_arista",
+    "PERSON_ROW_BG": "fondo_fila_persona",
+    "PERSON_ROW_TEXT": "texto_fila_persona",
+    "PERSON_ROW_BORDER": "borde_fila_persona",
+    "NODE_BORDER": "borde_nodo",
+    "NODE_TEXT": "texto_nodo",
+    "NODE_SEL_BG": "fondo_nodo_seleccionado",
+    "NODE_SEL_BORDER": "borde_nodo_seleccionado",
     "APPLY": "aplicar"
   },
   "TAGS": {

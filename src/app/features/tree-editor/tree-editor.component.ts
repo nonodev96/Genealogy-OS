@@ -433,11 +433,13 @@ import { ConfirmDialogComponent } from "../../shared/confirm-dialog.component";
     .person-row {
       display:flex; align-items:center; gap:8px;
       padding:8px 6px; border-radius:var(--radius-sm);
-      border:1px solid transparent; cursor:crosshair;
+      background:var(--person-row-bg);
+      color:var(--person-row-text);
+      border:1px solid var(--person-row-border); cursor:crosshair;
       transition:all var(--t);
     }
     .person-row:hover { background:var(--bg-overlay); border-color:var(--border-dim); }
-    .person-row.is-selected { background:rgba(255,51,51,0.06); border-color:rgba(255,51,51,0.3); }
+    .person-row.is-selected { background:var(--node-sel-bg); border-color:var(--node-sel-border); }
     .p-avatar {
       width:28px; height:28px; border-radius:2px;
       background:var(--bg-elevated); border:1px solid var(--border-dim);

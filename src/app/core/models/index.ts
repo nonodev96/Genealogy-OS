@@ -85,8 +85,17 @@ export interface Relation {
 // ── Tree Theme ────────────────────────────────
 export interface TreeTheme {
 	accentColor: string; // hex color
-	nodeBg: string; // hex color
+	nodeBackground: string; // hex color (formerly nodeBg)
 	edgeColor: string; // hex color
+	// Person-row palette
+	personRowBackground: string; // hex color
+	personRowText: string; // hex color
+	personRowBorder: string; // hex color
+	// Node palette
+	nodeBorder: string; // hex color
+	nodeText: string; // hex color
+	nodeSelectedBackground: string; // hex color
+	nodeSelectedBorder: string; // hex color
 }
 
 // ── Person Comment ────────────────────────────

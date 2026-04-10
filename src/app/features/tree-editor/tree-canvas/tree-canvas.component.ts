@@ -6,6 +6,7 @@ import {
 	EventEmitter,
 	Input,
 	inject,
+	effect,
 	type OnChanges,
 	type OnDestroy,
 	type OnInit,
@@ -27,6 +28,7 @@ import {
 	SIBLING_TYPES,
 	type TreeLayout,
 } from "@core/models";
+import { PaletteService } from "@core/services/palette.service";
 import { StorageService } from "@core/services/storage.service";
 import { TreeService } from "@core/services/tree.service";
 import {
@@ -38,31 +40,9 @@ import {
 const GRID_SIZE = 40;
 function snapToGrid(v: number): number { return Math.round(v / GRID_SIZE) * GRID_SIZE; }
 
-/* Nothing palette */
-const C_RED = "#ff3333";
-const C_WHITE = "#f0f0f0";
-const C_MUTED = "#666666";
+// Static fallback colours (used only when palette is unavailable)
 const C_DIM = "rgba(255,255,255,0.07)";
 const C_MID = "rgba(255,255,255,0.14)";
-const C_SURF = "#1c1c1c";
-const C_ELEV = "#222222";
-
-function edgeStroke(type: RelationType): string {
-	if (
-		PARENT_TYPES.includes(type) ||
-		[
-			"childOf",
-			"descendantOf",
-			"adoptiveChildOf",
-			"stepChildOf",
-			"wardOf",
-		].includes(type)
-	)
-		return C_WHITE;
-	if (PARTNER_TYPES.includes(type)) return C_RED;
-	if (SIBLING_TYPES.includes(type)) return "rgba(255,255,255,0.4)";
-	return C_MUTED;
-}
 
 @Component({
 	selector: "app-tree-canvas",
@@ -271,10 +251,22 @@ export class TreeCanvasComponent
 
 	private storage = inject(StorageService);
 	private treeService = inject(TreeService);
+	readonly paletteService = inject(PaletteService);
 
 	private zoom!: d3.ZoomBehavior<SVGSVGElement, unknown>;
 	private svg!: d3.Selection<SVGSVGElement, unknown, null, undefined>;
 	private g!: d3.Selection<SVGGElement, unknown, null, undefined>;
+	private destroyed = false;
+
+	constructor() {
+		// Re-render nodes and edges whenever the active palette changes.
+		// Guard added: skip if the component has been destroyed (avoids
+		// potential D3 operations on detached DOM elements).
+		effect(() => {
+			this.paletteService.palette(); // track the signal
+			if (!this.destroyed && this.g && this.layout) this.render();
+		});
+	}
 
 	ngOnInit(): void {
 		this.storage.nodeMove$.pipe(takeUntil(this.destroy$)).subscribe((ev) => {
@@ -313,6 +305,7 @@ export class TreeCanvasComponent
 	}
 
 	ngOnDestroy(): void {
+		this.destroyed = true;
 		this.destroy$.next();
 		this.destroy$.complete();
 		if (this.svg) this.svg.on(".zoom", null);
@@ -386,6 +379,7 @@ export class TreeCanvasComponent
 	/* ── Edges ───────────────────────────────────── */
 	private renderEdges(): void {
 		const eg = this.g.append("g").attr("class", "edges");
+		const pal = this.paletteService.palette();
 
 		this.layout!.edges.forEach((e) => {
 			const fromNode = this.layout!.nodes.get(e.fromId);
@@ -399,7 +393,7 @@ export class TreeCanvasComponent
 			const x2 = toPos.x + this.nodeW(toNode.person.name) / 2;
 			const y2 = toPos.y + NODE_H / 2;
 
-			const stroke = edgeStroke(e.type);
+			const stroke = this.edgeStroke(e.type, pal);
 			const dashed = TreeLayoutService.isDashed(e.type);
 			const label = TreeLayoutService.label(e.type);
 			const isPartner = PARTNER_TYPES.includes(e.type);
@@ -436,7 +430,7 @@ export class TreeCanvasComponent
 				.attr("width", tw)
 				.attr("height", 16)
 				.attr("rx", 2)
-				.attr("fill", C_SURF)
+				.attr("fill", pal.nodeBackground)
 				.attr("stroke", C_MID)
 				.attr("stroke-width", 0.8);
 			pill
@@ -446,7 +440,7 @@ export class TreeCanvasComponent
 				.attr("y", -1)
 				.attr("font-size", "10")
 				.attr("letter-spacing", "0.06em")
-				.attr("fill", isPartner ? C_RED : "rgba(255,255,255,0.75)")
+				.attr("fill", isPartner ? pal.accentColor : "rgba(255,255,255,0.75)")
 				.attr("font-family", "'Share Tech Mono', monospace")
 				.text(label);
 		});
@@ -455,6 +449,7 @@ export class TreeCanvasComponent
 	/* ── Nodes ───────────────────────────────────── */
 	private renderNodes(): void {
 		const ng = this.g.append("g").attr("class", "nodes");
+		const pal = this.paletteService.palette();
 
 		this.layout!.nodes.forEach((node) => {
 			const sel = node.id === this.selectedPersonId;
@@ -524,7 +519,7 @@ export class TreeCanvasComponent
 					.attr("height", NODE_H + 6)
 					.attr("rx", 6)
 					.attr("fill", "none")
-					.attr("stroke", C_RED)
+					.attr("stroke", pal.nodeSelectedBorder)
 					.attr("stroke-width", 1)
 					.attr("stroke-opacity", 0.6)
 					.attr("filter", "url(#glow-red)");
@@ -536,8 +531,8 @@ export class TreeCanvasComponent
 				.attr("width", nw)
 				.attr("height", NODE_H)
 				.attr("rx", 3)
-				.attr("fill", sel ? "rgba(255,51,51,0.06)" : C_SURF)
-				.attr("stroke", sel ? C_RED : C_DIM)
+				.attr("fill", sel ? pal.nodeSelectedBackground : pal.nodeBackground)
+				.attr("stroke", sel ? pal.nodeSelectedBorder : pal.nodeBorder)
 				.attr("stroke-width", sel ? 1 : 0.8);
 
 			/* Subtle top highlight */
@@ -556,7 +551,7 @@ export class TreeCanvasComponent
 				.attr("x", 8)
 				.attr("y", 11)
 				.attr("font-size", "7")
-				.attr("fill", C_MUTED)
+				.attr("fill", pal.nodeBorder)
 				.attr("font-family", "'Orbitron', monospace")
 				.attr("letter-spacing", "0.08em")
 				.text(node.id.slice(0, 6));
@@ -621,7 +616,7 @@ export class TreeCanvasComponent
 				.attr("font-family", "'Orbitron', monospace")
 				.attr("font-weight", "700")
 				.attr("letter-spacing", "0.05em")
-				.attr("fill", sel ? C_RED : C_WHITE)
+				.attr("fill", sel ? pal.nodeSelectedBorder : pal.nodeText)
 				.text(node.person.name);
 
 			/* Birth */
@@ -631,7 +626,7 @@ export class TreeCanvasComponent
 					.attr("x", tx)
 					.attr("y", ay + ar + 10)
 					.attr("font-size", "9")
-					.attr("fill", C_MUTED)
+					.attr("fill", pal.nodeBorder)
 					.attr("font-family", "'Share Tech Mono', monospace")
 					.attr("letter-spacing", "0.04em")
 					.text("b." + node.person.birthDate.slice(0, 4));
@@ -644,7 +639,7 @@ export class TreeCanvasComponent
 					.attr("x", tx)
 					.attr("y", node.person.birthDate ? ay + ar + 22 : ay + ar + 10)
 					.attr("font-size", "9")
-					.attr("fill", C_MUTED)
+					.attr("fill", pal.nodeBorder)
 					.attr("font-family", "'Share Tech Mono', monospace")
 					.text("d." + node.person.deathDate.slice(0, 4));
 			}
@@ -656,7 +651,7 @@ export class TreeCanvasComponent
 					.attr("cx", nw - 8)
 					.attr("cy", 8)
 					.attr("r", 3)
-					.attr("fill", C_RED)
+					.attr("fill", pal.accentColor)
 					.attr("filter", "url(#glow-red)");
 			}
 
@@ -667,7 +662,7 @@ export class TreeCanvasComponent
 				.attr("y1", NODE_H - 1)
 				.attr("x2", nw)
 				.attr("y2", NODE_H - 1)
-				.attr("stroke", sel ? "rgba(255,51,51,0.3)" : C_DIM)
+				.attr("stroke", sel ? pal.nodeSelectedBorder : pal.nodeBorder)
 				.attr("stroke-width", 0.8);
 		});
 	}
@@ -675,6 +670,18 @@ export class TreeCanvasComponent
 	/* ── Adaptive node width ─────────────────────── */
 	private nodeW(name: string): number {
 		return Math.max(140, name.length * 7 + 80);
+	}
+
+	/* ── Edge stroke colour from palette ─────────── */
+	private edgeStroke(type: RelationType, pal: Pick<import("@core/models").TreeTheme, "edgeColor" | "accentColor" | "nodeBorder">): string {
+		if (
+			PARENT_TYPES.includes(type) ||
+			["childOf", "descendantOf", "adoptiveChildOf", "stepChildOf", "wardOf"].includes(type)
+		)
+			return pal.edgeColor;
+		if (PARTNER_TYPES.includes(type)) return pal.accentColor;
+		if (SIBLING_TYPES.includes(type)) return "rgba(255,255,255,0.4)";
+		return pal.nodeBorder;
 	}
 
 	/* ── Update edge paths after node drag ───────── */
