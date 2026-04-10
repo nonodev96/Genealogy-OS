@@ -14,6 +14,8 @@ export const DEFAULT_PALETTE: TreeTheme = {
 	nodeText: "#f0f0f0",
 	nodeSelectedBackground: "#1a0000",
 	nodeSelectedBorder: "#ff3333",
+	selectionBorder: "#4499ff",
+	selectionBackground: "#2266cc",
 };
 
 @Injectable({ providedIn: "root" })
@@ -56,7 +58,9 @@ export class PaletteService {
 			this.isHex(t.nodeBorder) &&
 			this.isHex(t.nodeText) &&
 			this.isHex(t.nodeSelectedBackground) &&
-			this.isHex(t.nodeSelectedBorder)
+			this.isHex(t.nodeSelectedBorder) &&
+			this.isHex(t.selectionBorder) &&
+			this.isHex(t.selectionBackground)
 		);
 	}
 
@@ -78,7 +82,10 @@ export class PaletteService {
 						legacy["nodeBackground"] = legacy["nodeBg"];
 					}
 					// Merge stored values over defaults so new keys are always present.
-					const merged: TreeTheme = { ...DEFAULT_PALETTE, ...legacy } as TreeTheme;
+					const merged: TreeTheme = {
+						...DEFAULT_PALETTE,
+						...legacy,
+					} as TreeTheme;
 					if (this.isValid(merged)) return merged;
 				}
 			}
@@ -123,6 +130,13 @@ export class PaletteService {
 		root.style.setProperty("--node-text", theme.nodeText);
 		root.style.setProperty("--node-sel-bg", theme.nodeSelectedBackground);
 		root.style.setProperty("--node-sel-border", theme.nodeSelectedBorder);
+		// Marquee / group-selection CSS vars
+		root.style.setProperty("--selection-border", theme.selectionBorder);
+		root.style.setProperty(
+			"--selection-area",
+			this.hexToRgba(theme.selectionBackground, 0.15),
+		);
+		root.style.setProperty("--selection-active", theme.selectionBorder);
 	}
 
 	/** Convert a 6-digit hex colour string to `rgba(r, g, b, alpha)`. */

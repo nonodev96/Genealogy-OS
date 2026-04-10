@@ -238,6 +238,8 @@
     "NODE_TEXT": "node_text",
     "NODE_SEL_BG": "node_selected_bg",
     "NODE_SEL_BORDER": "node_selected_border",
+    "SELECTION_BORDER": "selection_border",
+    "SELECTION_BG": "selection_bg",
     "APPLY": "apply"
   },
   "TAGS": {
