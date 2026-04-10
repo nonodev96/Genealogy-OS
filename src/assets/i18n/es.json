@@ -107,11 +107,11 @@
       "CTA": "initialize_tree"
     },
     "SNACK": {
-      "TREE_CREATED": "árbol \u00ab{{name}}\u00bb inicializado",
-      "TREE_DUPLICATED": "duplicado → \u00ab{{name}}\u00bb",
+      "TREE_CREATED": "árbol «{{name}}» inicializado",
+      "TREE_DUPLICATED": "duplicado → «{{name}}»",
       "TREE_DELETED": "árbol eliminado",
       "IMPORT_ERROR": "error: archivo json inválido",
-      "IMPORTED": "importado \u00ab{{name}}\u00bb",
+      "IMPORTED": "importado «{{name}}»",
       "OPEN_ACTION": "abrir"
     }
   },
@@ -138,7 +138,12 @@
       "STATUS_LIVE": "live",
       "UNDO": "deshacer (Ctrl+Z)",
       "REDO": "rehacer (Ctrl+Shift+Z)",
-      "TOGGLE_SIDEBAR": "alternar panel"
+      "TOGGLE_SIDEBAR": "alternar panel",
+      "TIMELINE": "línea de tiempo",
+      "STATS": "estadísticas",
+      "HISTORY": "historial",
+      "THEME": "tema",
+      "PDF": "pdf"
     },
     "TABS": {
       "PERSONS": "personas",
@@ -150,7 +155,8 @@
       "EMPTY": "sin personas aún",
       "CTX_EDIT": "editar",
       "CTX_ADD_REL": "añadir relación",
-      "CTX_DELETE": "eliminar"
+      "CTX_DELETE": "eliminar",
+      "SEARCH": "buscar…"
     },
     "RELATIONS": {
       "ADD": "add_relación",
@@ -162,7 +168,9 @@
       "DIED": "fallecido",
       "RELATIONS": "relaciones",
       "EDIT": "editar",
-      "LINK": "enlazar"
+      "LINK": "enlazar",
+      "TAGS": "etiquetas",
+      "COMMENTS": "comentarios"
     },
     "SNACK": {
       "PERSON_ADDED": "nodo «{{name}}» añadido",
@@ -172,7 +180,10 @@
       "RELATION_UPDATED": "arista actualizada",
       "RELATION_DELETED": "arista eliminada",
       "SHARE_ERROR": "error: no se pudo generar el enlace",
-      "SHARE_COPIED": "enlace copiado al portapapeles"
+      "SHARE_COPIED": "enlace copiado al portapapeles",
+      "COMMENT_ADDED": "comentario añadido",
+      "COMMENT_DELETED": "comentario eliminado",
+      "THEME_APPLIED": "tema aplicado"
     },
     "LOADING": "cargando_árbol"
   },
@@ -191,10 +202,51 @@
     "LINK_ORTHOGONAL": "ortogonal"
   },
   "CONFIRM": {
-    "DELETE_TREE": "¿Eliminar \u00ab{{name}}\u00bb? Esta acción no se puede deshacer.",
-    "DELETE_PERSON": "¿Eliminar \u00ab{{name}}\u00bb? Se eliminarán todas sus relaciones.",
+    "DELETE_TREE": "¿Eliminar «{{name}}»? Esta acción no se puede deshacer.",
+    "DELETE_PERSON": "¿Eliminar «{{name}}»? Se eliminarán todas sus relaciones.",
     "DELETE_RELATION": "¿Eliminar esta relación?",
     "PHOTO_TOO_LARGE": "La foto no puede superar 2 MB.",
     "BTN_DELETE": "Eliminar"
+  },
+  "STATS": {
+    "TITLE": "estadísticas",
+    "PERSONS": "personas",
+    "RELATIONS": "relaciones",
+    "GENERATIONS": "generaciones",
+    "AVG_LIFESPAN": "esperanza media",
+    "OLDEST": "más antiguo",
+    "YOUNGEST": "más joven",
+    "GENDER_BREAKDOWN": "distribución por género"
+  },
+  "HISTORY": {
+    "TITLE": "historial_cambios",
+    "EMPTY": "sin historial aún",
+    "NO_DESC": "sin descripción",
+    "RESTORE": "restaurar a este punto"
+  },
+  "THEME": {
+    "TITLE": "tema_árbol",
+    "PRESETS": "preajustes",
+    "CUSTOM": "personalizado",
+    "ACCENT": "acento",
+    "NODE_BG": "fondo_nodo",
+    "EDGE_COLOR": "color_arista",
+    "APPLY": "aplicar"
+  },
+  "TAGS": {
+    "LABEL": "etiquetas",
+    "PLACEHOLDER": "añadir etiqueta…",
+    "REMOVE": "eliminar etiqueta"
+  },
+  "SEARCH": {
+    "PLACEHOLDER": "buscar personas…"
+  },
+  "COMMENTS": {
+    "TITLE": "comentarios",
+    "PLACEHOLDER": "escribe un comentario…",
+    "AUTHOR_PLACEHOLDER": "autor (opcional)",
+    "ADD": "añadir",
+    "EMPTY": "sin comentarios aún",
+    "DELETE": "eliminar comentario"
   }
 }
