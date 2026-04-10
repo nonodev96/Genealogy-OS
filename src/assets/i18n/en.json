@@ -107,11 +107,11 @@
       "CTA": "initialize_tree"
     },
     "SNACK": {
-      "TREE_CREATED": "tree \u00ab{{name}}\u00bb initialized",
-      "TREE_DUPLICATED": "duplicated → \u00ab{{name}}\u00bb",
+      "TREE_CREATED": "tree «{{name}}» initialized",
+      "TREE_DUPLICATED": "duplicated → «{{name}}»",
       "TREE_DELETED": "tree deleted",
       "IMPORT_ERROR": "error: invalid json file",
-      "IMPORTED": "imported \u00ab{{name}}\u00bb",
+      "IMPORTED": "imported «{{name}}»",
       "OPEN_ACTION": "open"
     }
   },
@@ -138,7 +138,12 @@
       "STATUS_LIVE": "live",
       "UNDO": "undo (Ctrl+Z)",
       "REDO": "redo (Ctrl+Shift+Z)",
-      "TOGGLE_SIDEBAR": "toggle sidebar"
+      "TOGGLE_SIDEBAR": "toggle sidebar",
+      "TIMELINE": "timeline",
+      "STATS": "stats",
+      "HISTORY": "history",
+      "THEME": "theme",
+      "PDF": "pdf"
     },
     "TABS": {
       "PERSONS": "persons",
@@ -150,7 +155,8 @@
       "EMPTY": "no persons yet",
       "CTX_EDIT": "edit",
       "CTX_ADD_REL": "add relation",
-      "CTX_DELETE": "delete"
+      "CTX_DELETE": "delete",
+      "SEARCH": "search…"
     },
     "RELATIONS": {
       "ADD": "add_relation",
@@ -162,7 +168,9 @@
       "DIED": "died",
       "RELATIONS": "relations",
       "EDIT": "edit",
-      "LINK": "link"
+      "LINK": "link",
+      "TAGS": "tags",
+      "COMMENTS": "comments"
     },
     "SNACK": {
       "PERSON_ADDED": "node «{{name}}» added",
@@ -172,7 +180,10 @@
       "RELATION_UPDATED": "edge updated",
       "RELATION_DELETED": "edge deleted",
       "SHARE_ERROR": "error: could not generate link",
-      "SHARE_COPIED": "link copied to clipboard"
+      "SHARE_COPIED": "link copied to clipboard",
+      "COMMENT_ADDED": "comment added",
+      "COMMENT_DELETED": "comment deleted",
+      "THEME_APPLIED": "theme applied"
     },
     "LOADING": "loading_tree"
   },
@@ -191,10 +202,52 @@
     "LINK_ORTHOGONAL": "orthogonal"
   },
   "CONFIRM": {
-    "DELETE_TREE": "Delete \u00ab{{name}}\u00bb? This action cannot be undone.",
-    "DELETE_PERSON": "Delete \u00ab{{name}}\u00bb? All their relations will also be removed.",
+    "DELETE_TREE": "Delete «{{name}}»? This action cannot be undone.",
+    "DELETE_PERSON": "Delete «{{name}}»? All their relations will also be removed.",
     "DELETE_RELATION": "Delete this relation?",
     "PHOTO_TOO_LARGE": "Photo must be under 2 MB.",
     "BTN_DELETE": "Delete"
+  },
+  "STATS": {
+    "TITLE": "statistics",
+    "PERSONS": "persons",
+    "RELATIONS": "relations",
+    "GENERATIONS": "generations",
+    "AVG_LIFESPAN": "avg lifespan",
+    "OLDEST": "oldest",
+    "YOUNGEST": "youngest",
+    "GENDER_BREAKDOWN": "gender breakdown"
+  },
+  "HISTORY": {
+    "TITLE": "change_history",
+    "EMPTY": "no history yet",
+    "NO_DESC": "no description",
+    "RESTORE": "restore to this point"
+  },
+  "THEME": {
+    "TITLE": "tree_theme",
+    "PRESETS": "presets",
+    "CUSTOM": "custom",
+    "ACCENT": "accent",
+    "NODE_BG": "node_bg",
+    "EDGE_COLOR": "edge_color",
+    "APPLY": "apply"
+  },
+  "TAGS": {
+    "LABEL": "tags",
+    "PLACEHOLDER": "add tag…",
+    "REMOVE": "remove tag"
+  },
+  "SEARCH": {
+    "PLACEHOLDER": "search persons…"
+  },
+  "COMMENTS": {
+    "TITLE": "comments",
+    "PLACEHOLDER": "write a comment…",
+    "AUTHOR_PLACEHOLDER": "author (optional)",
+    "ADD": "add",
+    "EMPTY": "no comments yet",
+    "DELETE": "delete comment",
+    "ANONYMOUS": "anonymous"
   }
 }

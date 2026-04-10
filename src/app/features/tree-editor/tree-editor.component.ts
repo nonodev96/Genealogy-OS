@@ -1,9 +1,9 @@
 import { BreakpointObserver, Breakpoints } from "@angular/cdk/layout";
+import { DatePipe } from "@angular/common";
 import {
 ChangeDetectionStrategy,
 ChangeDetectorRef,
 Component,
-computed,
 inject,
 signal,
 type OnDestroy,
@@ -12,9 +12,12 @@ ViewChild,
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
+import { MatChipsModule } from "@angular/material/chips";
 import { MatDialog } from "@angular/material/dialog";
 import { MatDividerModule } from "@angular/material/divider";
+import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatSidenavModule } from "@angular/material/sidenav";
 import { MatSnackBar } from "@angular/material/snack-bar";
@@ -25,10 +28,11 @@ import { TranslatePipe, TranslateService } from "@ngx-translate/core";
 import { fromEvent, Subscription, firstValueFrom } from "rxjs";
 import { filter } from "rxjs/operators";
 
-import type { FamilyTree, Person, Relation, RelationType, TreeLayout, TreeTheme } from "@core/models";
+import type { FamilyTree, Person, PersonComment, Relation, RelationType, TreeLayout, TreeTheme } from "@core/models";
 import { CollaborationService } from "@core/services/collaboration.service";
 import { ExportService } from "@core/services/export.service";
 import { HistoryService, type TreeSnapshot } from "@core/services/history.service";
+import { StorageService } from "@core/services/storage.service";
 import { TreeService } from "@core/services/tree.service";
 import { TreeLayoutService } from "@core/services/tree-layout.service";
 import {
@@ -51,6 +55,8 @@ import { ConfirmDialogComponent } from "../../shared/confirm-dialog.component";
 	selector: "app-tree-editor",
 	imports: [
 		RouterModule,
+		FormsModule,
+		DatePipe,
 		MatSidenavModule,
 		MatButtonModule,
 		MatIconModule,
@@ -58,7 +64,14 @@ import { ConfirmDialogComponent } from "../../shared/confirm-dialog.component";
 		MatTooltipModule,
 		MatDividerModule,
 		MatTabsModule,
+		MatFormFieldModule,
+		MatInputModule,
+		MatChipsModule,
 		TreeCanvasComponent,
+		TimelineComponent,
+		StatsPanelComponent,
+		ThemePickerComponent,
+		HistoryPanelComponent,
 		TranslatePipe,
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -98,7 +111,21 @@ import { ConfirmDialogComponent } from "../../shared/confirm-dialog.component";
             <button mat-menu-item (click)="exportSVG()"><mat-icon>image</mat-icon> .svg</button>
             <button mat-menu-item (click)="exportText()"><mat-icon>text_snippet</mat-icon> .txt</button>
             <button mat-menu-item (click)="exportJSON()"><mat-icon>data_object</mat-icon> .json</button>
+            <button mat-menu-item (click)="exportPDF()"><mat-icon>picture_as_pdf</mat-icon> .pdf</button>
           </mat-menu>
+          <mat-divider [vertical]="true" style="height:20px;margin:0 4px"></mat-divider>
+          <button class="hdr-btn" [class.hdr-btn--active]="activeView() === 'timeline'" (click)="toggleView()" [matTooltip]="('TREE_EDITOR.HEADER.TIMELINE' | translate)">
+            <mat-icon>timeline</mat-icon>
+          </button>
+          <button class="hdr-btn" [class.hdr-btn--active]="showStats()" (click)="showStats.set(!showStats())" [matTooltip]="('TREE_EDITOR.HEADER.STATS' | translate)">
+            <mat-icon>bar_chart</mat-icon>
+          </button>
+          <button class="hdr-btn" [class.hdr-btn--active]="showHistory()" (click)="showHistory.set(!showHistory())" [matTooltip]="('TREE_EDITOR.HEADER.HISTORY' | translate)">
+            <mat-icon>history</mat-icon>
+          </button>
+          <button class="hdr-btn" [class.hdr-btn--active]="showThemePicker()" (click)="showThemePicker.set(!showThemePicker())" [matTooltip]="('TREE_EDITOR.HEADER.THEME' | translate)">
+            <mat-icon>palette</mat-icon>
+          </button>
         </div>
       </header>
 
@@ -117,13 +144,35 @@ import { ConfirmDialogComponent } from "../../shared/confirm-dialog.component";
                 <button class="add-btn" (click)="openAddPerson()">
                   <mat-icon>add</mat-icon> {{ 'TREE_EDITOR.PERSONS.ADD' | translate }}
                 </button>
-                @if (tree.persons.length === 0) {
+                <!-- Search input -->
+                <div class="search-box">
+                  <mat-icon class="search-ico">search</mat-icon>
+                  <input class="search-input" type="text" [(ngModel)]="personSearchValue"
+                    [placeholder]="'SEARCH.PLACEHOLDER' | translate"
+                    (input)="personSearch.set(personSearchValue)"
+                    aria-label="Search persons"/>
+                  @if (personSearch()) {
+                    <button class="search-clear" (click)="personSearchValue=''; personSearch.set('')" aria-label="Clear search">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  }
+                </div>
+                <!-- Tag filter chips -->
+                @if (allTags.length > 0) {
+                  <div class="tag-filters" role="group" [attr.aria-label]="'TAGS.LABEL' | translate">
+                    @for (tag of allTags; track tag) {
+                      <button class="tag-chip" [class.tag-chip--active]="activeTagFilters().includes(tag)"
+                        (click)="toggleTagFilter(tag)">{{ tag }}</button>
+                    }
+                  </div>
+                }
+                @if (filteredPersons.length === 0) {
                   <div class="list-empty">
                     <p>{{ 'TREE_EDITOR.PERSONS.EMPTY' | translate }}</p>
                   </div>
                 }
                 <div class="person-list stagger">
-                  @for (p of tree.persons; track p.id) {
+                  @for (p of filteredPersons; track p.id) {
                   <div
                     class="person-row"
                     [class.is-selected]="selectedPersonId === p.id"
@@ -216,6 +265,42 @@ import { ConfirmDialogComponent } from "../../shared/confirm-dialog.component";
                   <button class="act-btn" (click)="openEditPerson(p)"><mat-icon>edit</mat-icon> {{ 'TREE_EDITOR.DETAIL.EDIT' | translate }}</button>
                   <button class="act-btn" (click)="openAddRelation(p.id)"><mat-icon>link</mat-icon> {{ 'TREE_EDITOR.DETAIL.LINK' | translate }}</button>
                 </div>
+                <!-- Tags -->
+                @if (p.tags && p.tags.length > 0) {
+                  <div class="detail-tags" [attr.aria-label]="'TREE_EDITOR.DETAIL.TAGS' | translate">
+                    @for (tag of p.tags; track tag) {
+                      <span class="detail-tag-chip">{{ tag }}</span>
+                    }
+                  </div>
+                }
+                <!-- Comments -->
+                <div class="comments-section">
+                  <p class="section-label">{{ 'TREE_EDITOR.DETAIL.COMMENTS' | translate }}</p>
+                  @if (getPersonComments(p.id).length === 0) {
+                    <p class="comments-empty">{{ 'COMMENTS.EMPTY' | translate }}</p>
+                  }
+                  @for (c of getPersonComments(p.id); track c.id) {
+                    <div class="comment-row">
+                      <div class="c-header">
+                        <span class="c-author">{{ c.author || ('COMMENTS.ANONYMOUS' | translate) }}</span>
+                        <span class="c-time">{{ c.createdAt | date:'dd MMM HH:mm' }}</span>
+                        <button class="c-del" (click)="deleteComment(c.id)" [attr.aria-label]="'COMMENTS.DELETE' | translate">
+                          <mat-icon>close</mat-icon>
+                        </button>
+                      </div>
+                      <p class="c-text">{{ c.text }}</p>
+                    </div>
+                  }
+                  <div class="comment-form">
+                    <input class="c-input" type="text" [(ngModel)]="newCommentAuthor"
+                      [placeholder]="'COMMENTS.AUTHOR_PLACEHOLDER' | translate"/>
+                    <textarea class="c-input c-textarea" [(ngModel)]="newCommentText" rows="2"
+                      [placeholder]="'COMMENTS.PLACEHOLDER' | translate"></textarea>
+                    <button class="c-add-btn" [disabled]="!newCommentText.trim()" (click)="addComment(p.id)">
+                      <mat-icon>add_comment</mat-icon> {{ 'COMMENTS.ADD' | translate }}
+                    </button>
+                  </div>
+                </div>
               </div>
             </mat-tab>
             }
@@ -223,17 +308,50 @@ import { ConfirmDialogComponent } from "../../shared/confirm-dialog.component";
           </mat-tab-group>
         </mat-sidenav>
 
-        <!-- Canvas -->
+        <!-- Canvas + panels -->
         <mat-sidenav-content class="canvas-area">
-          <app-tree-canvas
-            #canvas
-            [tree]="tree"
-            [layout]="layout"
-            [selectedPersonId]="selectedPersonId"
-            (personClick)="selectPerson($event)"
-            (personDblClick)="openEditPerson(getPersonById($event)!)"
-            (backgroundClick)="deselectAll()">
-          </app-tree-canvas>
+          <div class="canvas-with-panels">
+            <!-- Main view -->
+            <div class="main-view" [style]="themeStyle">
+              @if (showThemePicker()) {
+                <div class="theme-overlay">
+                  <app-theme-picker
+                    [initialTheme]="tree.theme"
+                    (themeChange)="applyTheme($event)"
+                    (close)="showThemePicker.set(false)">
+                  </app-theme-picker>
+                </div>
+              }
+              @if (activeView() === 'canvas') {
+                <app-tree-canvas
+                  #canvas
+                  [tree]="tree"
+                  [layout]="layout"
+                  [selectedPersonId]="selectedPersonId"
+                  (personClick)="selectPerson($event)"
+                  (personDblClick)="openEditPerson(getPersonById($event)!)"
+                  (backgroundClick)="deselectAll()">
+                </app-tree-canvas>
+              } @else {
+                <app-timeline
+                  [persons]="tree.persons"
+                  (personClick)="selectPerson($event)">
+                </app-timeline>
+              }
+            </div>
+            <!-- Stats panel -->
+            @if (showStats()) {
+              <app-stats-panel [tree]="tree" (close)="showStats.set(false)"></app-stats-panel>
+            }
+            <!-- History panel -->
+            @if (showHistory()) {
+              <app-history-panel
+                [snapshots]="historySnapshots"
+                (restore)="restoreSnapshot($event)"
+                (close)="showHistory.set(false)">
+              </app-history-panel>
+            }
+          </div>
         </mat-sidenav-content>
 
       </mat-sidenav-container>
@@ -385,6 +503,9 @@ import { ConfirmDialogComponent } from "../../shared/confirm-dialog.component";
     .danger-item { color:var(--red) !important; }
     .danger-item mat-icon { color:var(--red) !important; }
 
+    /* Active header button */
+    .hdr-btn--active { border-color:var(--red) !important; color:var(--red) !important; background:var(--red-dim) !important; }
+
     /* Sidebar toggle button */
     .menu-btn {
       background:transparent; border:1px solid var(--border-dim);
@@ -395,6 +516,92 @@ import { ConfirmDialogComponent } from "../../shared/confirm-dialog.component";
     }
     .menu-btn mat-icon { font-size:16px !important; width:16px !important; height:16px !important; }
     .menu-btn:hover { border-color:var(--border-mid); color:var(--text-primary); }
+
+    /* Canvas with panels layout */
+    .canvas-with-panels { display:flex; height:100%; overflow:hidden; }
+    .main-view { flex:1; position:relative; overflow:hidden; }
+    .theme-overlay {
+      position:absolute; top:12px; right:12px; z-index:100;
+    }
+
+    /* Search */
+    .search-box {
+      display:flex; align-items:center; gap:6px;
+      background:var(--bg-elevated); border:1px solid var(--border-dim);
+      border-radius:var(--radius-sm); padding:4px 8px;
+      transition:border-color var(--t);
+    }
+    .search-box:focus-within { border-color:var(--border-mid); }
+    .search-ico { font-size:14px !important; width:14px !important; height:14px !important; color:var(--text-muted); flex-shrink:0; }
+    .search-input {
+      flex:1; background:transparent; border:none; outline:none;
+      color:var(--text-primary); font-family:var(--font-mono); font-size:11px;
+      min-width:0;
+    }
+    .search-input::placeholder { color:var(--text-muted); }
+    .search-clear {
+      background:transparent; border:none; padding:0; cursor:pointer;
+      color:var(--text-muted); display:flex; align-items:center;
+    }
+    .search-clear mat-icon { font-size:12px !important; width:12px !important; height:12px !important; }
+    .search-clear:hover { color:var(--text-primary); }
+
+    /* Tag filter chips */
+    .tag-filters { display:flex; flex-wrap:wrap; gap:4px; }
+    .tag-chip {
+      padding:2px 8px; background:var(--bg-elevated); border:1px solid var(--border-dim);
+      border-radius:2px; font-size:9px; color:var(--text-muted); font-family:var(--font-mono);
+      cursor:pointer; transition:all var(--t); letter-spacing:0.06em;
+    }
+    .tag-chip:hover { border-color:var(--border-mid); color:var(--text-primary); }
+    .tag-chip--active { border-color:var(--red); color:var(--red); background:var(--red-dim); }
+
+    /* Detail tags */
+    .detail-tags { display:flex; flex-wrap:wrap; gap:4px; width:100%; }
+    .detail-tag-chip {
+      padding:2px 8px; background:var(--red-dim); border:1px solid var(--red);
+      border-radius:2px; font-size:9px; color:var(--red); font-family:var(--font-mono);
+      letter-spacing:0.06em;
+    }
+
+    /* Comments */
+    .section-label { font-size:9px; color:var(--text-muted); font-family:var(--font-mono); letter-spacing:0.1em; text-transform:uppercase; margin-top:4px; width:100%; }
+    .comments-section { width:100%; display:flex; flex-direction:column; gap:8px; margin-top:4px; }
+    .comments-empty { font-size:10px; color:var(--text-muted); font-family:var(--font-mono); text-align:center; padding:8px 0; }
+    .comment-row {
+      background:var(--bg-elevated); border:1px solid var(--border-dim);
+      border-radius:var(--radius-sm); padding:8px;
+    }
+    .c-header { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+    .c-author { font-size:10px; color:var(--red); font-family:var(--font-mono); flex:1; }
+    .c-time { font-size:9px; color:var(--text-muted); }
+    .c-del {
+      background:transparent; border:none; padding:0; cursor:pointer;
+      color:var(--text-muted); display:flex; align-items:center;
+    }
+    .c-del mat-icon { font-size:12px !important; width:12px !important; height:12px !important; }
+    .c-del:hover { color:var(--red); }
+    .c-text { font-size:10px; color:var(--text-secondary); font-family:var(--font-mono); word-break:break-word; }
+    .comment-form { display:flex; flex-direction:column; gap:6px; }
+    .c-input {
+      background:var(--bg-elevated); border:1px solid var(--border-dim);
+      border-radius:var(--radius-sm); padding:6px 8px;
+      color:var(--text-primary); font-family:var(--font-mono); font-size:11px;
+      outline:none; transition:border-color var(--t); width:100%;
+    }
+    .c-input:focus { border-color:var(--border-mid); }
+    .c-input::placeholder { color:var(--text-muted); }
+    .c-textarea { resize:vertical; min-height:52px; }
+    .c-add-btn {
+      display:inline-flex; align-items:center; gap:4px;
+      padding:6px 10px; background:var(--red-dim); border:1px solid var(--red);
+      border-radius:var(--radius-sm); color:var(--red);
+      font-family:var(--font-mono); font-size:10px; cursor:pointer;
+      transition:all var(--t); letter-spacing:0.06em;
+    }
+    .c-add-btn mat-icon { font-size:12px !important; width:12px !important; height:12px !important; }
+    .c-add-btn:hover:not([disabled]) { background:var(--red); color:#fff; }
+    .c-add-btn[disabled] { opacity:0.3; cursor:default; }
 
     /* Responsive */
     @media (max-width:640px) {
@@ -415,6 +622,7 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 
 	private route = inject(ActivatedRoute);
 	private treeService = inject(TreeService);
+	private storageService = inject(StorageService);
 	private exportService = inject(ExportService);
 	private collab = inject(CollaborationService);
 	private dialog = inject(MatDialog);
@@ -432,6 +640,21 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 	selectedPersonId: string | null = null;
 	canUndo = false;
 	canRedo = false;
+
+	// Panel visibility signals
+	readonly activeView = signal<"canvas" | "timeline">("canvas");
+	readonly showStats = signal(false);
+	readonly showHistory = signal(false);
+	readonly showThemePicker = signal(false);
+
+	// Person search / filter signals
+	readonly personSearch = signal("");
+	readonly activeTagFilters = signal<string[]>([]);
+	personSearchValue = "";
+
+	// Comment form state
+	newCommentText = "";
+	newCommentAuthor = "";
 
 	private subs = new Subscription();
 
@@ -535,7 +758,7 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 	openAddPerson(): void {
 		this.dialog
 			.open(PersonFormComponent, {
-				data: { treeId: this.tree!.id } satisfies PersonFormData,
+				data: { treeId: this.tree!.id, existingTags: this.allTags } satisfies PersonFormData,
 				width: "480px",
 				maxWidth: "95vw",
 			})
@@ -557,7 +780,7 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 		if (!person) return;
 		this.dialog
 			.open(PersonFormComponent, {
-				data: { person, treeId: this.tree!.id } satisfies PersonFormData,
+				data: { person, treeId: this.tree!.id, existingTags: this.allTags } satisfies PersonFormData,
 				width: "480px",
 				maxWidth: "95vw",
 			})
@@ -704,5 +927,115 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 	}
 	exportJSON(): void {
 		this.exportService.downloadJSON(this.tree!);
+	}
+	exportPDF(): void {
+		this.exportService.downloadPDF(this.tree!, this.canvasRef?.getSVGElement());
+	}
+
+	// ── View toggle ──────────────────────────────
+
+	toggleView(): void {
+		this.activeView.update((v) => (v === "canvas" ? "timeline" : "canvas"));
+	}
+
+	// ── Theme ─────────────────────────────────────
+
+	get themeStyle(): Record<string, string> {
+		const t = this.tree?.theme;
+		if (!t) return {};
+		return {
+			"--red": t.accentColor,
+			"--text-accent": t.accentColor,
+			"--red-dim": `${t.accentColor}1a`,
+			"--border-accent": `${t.accentColor}99`,
+		};
+	}
+
+	async applyTheme(theme: TreeTheme): Promise<void> {
+		if (!this.tree) return;
+		await this.storageService.saveTree({ ...this.tree, theme });
+		this.showThemePicker.set(false);
+		this.snack.open(this.translate.instant("TREE_EDITOR.SNACK.THEME_APPLIED"), "", { duration: 2000 });
+	}
+
+	// ── Filtered persons ──────────────────────────
+
+	get filteredPersons(): Person[] {
+		const q = this.personSearch().toLowerCase().trim();
+		const filters = this.activeTagFilters();
+		const persons = this.tree?.persons ?? [];
+		return persons.filter((p) => {
+			if (filters.length > 0 && !filters.some((f) => p.tags?.includes(f))) return false;
+			if (!q) return true;
+			return (
+				p.name.toLowerCase().includes(q) ||
+				(p.birthDate?.includes(q) ?? false) ||
+				(p.notes?.toLowerCase().includes(q) ?? false)
+			);
+		});
+	}
+
+	get allTags(): string[] {
+		const tags = new Set<string>();
+		for (const p of this.tree?.persons ?? []) {
+			for (const t of p.tags ?? []) tags.add(t);
+		}
+		return [...tags];
+	}
+
+	toggleTagFilter(tag: string): void {
+		this.activeTagFilters.update((filters) =>
+			filters.includes(tag)
+				? filters.filter((f) => f !== tag)
+				: [...filters, tag],
+		);
+	}
+
+	// ── History ───────────────────────────────────
+
+	get historySnapshots(): TreeSnapshot[] {
+		return [...this.historyService.getHistory(this.tree?.id ?? "")].reverse();
+	}
+
+	async restoreSnapshot(index: number): Promise<void> {
+		if (!this.tree) return;
+		const snaps = [...this.historyService.getHistory(this.tree.id)].reverse();
+		const snap = snaps[index];
+		if (!snap) return;
+		this.historyService.snapshot(this.tree);
+		await this.storageService.saveTree({
+			...this.tree,
+			persons: snap.persons,
+			relations: snap.relations,
+			nodePositions: snap.nodePositions,
+			updatedAt: new Date().toISOString(),
+		});
+		this.snack.open(this.translate.instant("HISTORY.RESTORE"), "", { duration: 2000 });
+	}
+
+	// ── Comments ──────────────────────────────────
+
+	getPersonComments(personId: string): PersonComment[] {
+		return (this.tree?.comments ?? []).filter((c) => c.personId === personId);
+	}
+
+	async addComment(personId: string): Promise<void> {
+		const text = this.newCommentText.trim();
+		if (!text || !this.tree) return;
+		await this.treeService.addComment(
+			this.tree.id,
+			personId,
+			text,
+			this.newCommentAuthor.trim() || "anonymous",
+		);
+		this.newCommentText = "";
+		this.newCommentAuthor = "";
+		this.snack.open(this.translate.instant("TREE_EDITOR.SNACK.COMMENT_ADDED"), "", { duration: 2000 });
+	}
+
+	async deleteComment(commentId: string): Promise<void> {
+		if (!this.tree) return;
+		await this.treeService.deleteComment(this.tree.id, commentId);
+		this.snack.open(this.translate.instant("TREE_EDITOR.SNACK.COMMENT_DELETED"), "", { duration: 2000 });
 	}
 }
