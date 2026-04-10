@@ -168,7 +168,7 @@ import { ConfirmDialogComponent } from "../../shared/confirm-dialog.component";
                 }
                 @if (filteredPersons.length === 0) {
                   <div class="list-empty">
-                    <p>{{ personSearch() || activeTagFilters().length > 0 ? ('TREE_EDITOR.PERSONS.EMPTY' | translate) : ('TREE_EDITOR.PERSONS.EMPTY' | translate) }}</p>
+                    <p>{{ 'TREE_EDITOR.PERSONS.EMPTY' | translate }}</p>
                   </div>
                 }
                 <div class="person-list stagger">
@@ -282,7 +282,7 @@ import { ConfirmDialogComponent } from "../../shared/confirm-dialog.component";
                   @for (c of getPersonComments(p.id); track c.id) {
                     <div class="comment-row">
                       <div class="c-header">
-                        <span class="c-author">{{ c.author || 'anon' }}</span>
+                        <span class="c-author">{{ c.author || ('COMMENTS.ANONYMOUS' | translate) }}</span>
                         <span class="c-time">{{ c.createdAt | date:'dd MMM HH:mm' }}</span>
                         <button class="c-del" (click)="deleteComment(c.id)" [attr.aria-label]="'COMMENTS.DELETE' | translate">
                           <mat-icon>close</mat-icon>

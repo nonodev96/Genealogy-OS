@@ -247,6 +247,7 @@
     "AUTHOR_PLACEHOLDER": "author (optional)",
     "ADD": "add",
     "EMPTY": "no comments yet",
-    "DELETE": "delete comment"
+    "DELETE": "delete comment",
+    "ANONYMOUS": "anonymous"
   }
 }
