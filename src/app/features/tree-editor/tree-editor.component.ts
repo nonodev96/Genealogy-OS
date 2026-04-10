@@ -678,11 +678,17 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 			this.treeService.activeTree$.subscribe((tree) => {
 				this.tree = tree ?? null;
 				// Sync palette: validate tree theme; fix it if corrupted.
+				// Design: opening a tree applies its stored palette globally so
+				// the accent colour is consistent with the tree's visual identity.
+				// When applying a new theme the palette is propagated to all trees
+				// (see applyTheme), so under normal use every tree shares the same
+				// palette.  The fallback below handles trees created before this
+				// feature or trees whose theme data has been corrupted.
 				if (this.tree) {
 					if (this.paletteService.isValid(this.tree.theme)) {
 						this.paletteService.setPalette(this.tree.theme);
 					} else {
-						// Replace invalid/missing tree theme with the global palette.
+						// Replace invalid/missing tree theme with the current global palette.
 						const globalPalette = this.paletteService.palette();
 						void this.storageService.saveTree({ ...this.tree, theme: globalPalette });
 					}
@@ -722,9 +728,6 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 		this.subs.unsubscribe();
 		this.treeService.setActiveTree(null);
 		this.historyService.clearTree(this.tree?.id ?? "");
-		// Restore the persisted global palette so the dashboard (and any other
-		// view) reflects the correct colours after leaving the tree editor.
-		this.paletteService.setPalette(this.paletteService.palette());
 	}
 
 	async undoAction(): Promise<void> {
@@ -966,11 +969,11 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 		// 3. Propagate the new palette to every other tree so each tree's
 		//    stored theme stays in sync with the global palette.
 		const allTrees = this.storageService.getAllTrees();
-		for (const t of allTrees) {
-			if (t.id !== this.tree.id) {
-				void this.storageService.saveTree({ ...t, theme });
-			}
-		}
+		await Promise.allSettled(
+			allTrees
+				.filter((t) => t.id !== this.tree!.id)
+				.map((t) => this.storageService.saveTree({ ...t, theme })),
+		);
 		this.showThemePicker.set(false);
 		this.snack.open(this.translate.instant("TREE_EDITOR.SNACK.THEME_APPLIED"), "", { duration: 2000 });
 	}
