@@ -371,7 +371,11 @@ export class TreeCanvasComponent
 			this.startMarquee(ev);
 		});
 
-		// Bind move/up to window so drag works even if cursor leaves SVG
+		// Bind move/up to window so drag works even if cursor leaves SVG.
+		// Remove any previously registered handlers first to prevent duplicates
+		// if initD3() were ever called more than once.
+		if (this.onMouseMoveBound) window.removeEventListener("mousemove", this.onMouseMoveBound);
+		if (this.onMouseUpBound) window.removeEventListener("mouseup", this.onMouseUpBound);
 		this.onMouseMoveBound = (ev: MouseEvent) => this.updateMarquee(ev);
 		this.onMouseUpBound = (ev: MouseEvent) => this.endMarquee(ev);
 		window.addEventListener("mousemove", this.onMouseMoveBound);
@@ -397,7 +401,7 @@ export class TreeCanvasComponent
 			.attr("y", pt.y)
 			.attr("width", 0)
 			.attr("height", 0)
-			.attr("fill", this.hexToRgba(pal.selectionBackground, 0.15))
+			.attr("fill", this.paletteService.hexToRgba(pal.selectionBackground, 0.15))
 			.attr("stroke", pal.selectionBorder)
 			.attr("stroke-width", 1)
 			.attr("stroke-dasharray", "4,3");
@@ -496,7 +500,7 @@ export class TreeCanvasComponent
 					.attr("width", nw + 8)
 					.attr("height", NODE_H + 8)
 					.attr("rx", 6)
-					.attr("fill", this.hexToRgba(pal.selectionBackground, 0.2))
+					.attr("fill", this.paletteService.hexToRgba(pal.selectionBackground, 0.2))
 					.attr("stroke", pal.selectionBorder)
 					.attr("stroke-width", 1.5)
 					.attr("stroke-opacity", 0.85);
@@ -508,7 +512,7 @@ export class TreeCanvasComponent
 				.attr(
 					"fill",
 					inGroup
-						? this.hexToRgba(pal.selectionBackground, 0.25)
+						? this.paletteService.hexToRgba(pal.selectionBackground, 0.25)
 						: isSel
 							? pal.nodeSelectedBackground
 							: pal.nodeBackground,
@@ -523,14 +527,6 @@ export class TreeCanvasComponent
 				)
 				.attr("stroke-width", inGroup ? 1.2 : isSel ? 1 : 0.8);
 		});
-	}
-
-	/** Convert a 6-digit hex colour to `rgba(r, g, b, alpha)`. */
-	private hexToRgba(hex: string, alpha: number): string {
-		const r = parseInt(hex.slice(1, 3), 16);
-		const g = parseInt(hex.slice(3, 5), 16);
-		const b = parseInt(hex.slice(5, 7), 16);
-		return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 	}
 
 	private render(): void {
