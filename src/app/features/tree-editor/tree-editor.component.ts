@@ -32,6 +32,7 @@ import type { FamilyTree, Person, PersonComment, Relation, RelationType, TreeLay
 import { CollaborationService } from "@core/services/collaboration.service";
 import { ExportService } from "@core/services/export.service";
 import { HistoryService, type TreeSnapshot } from "@core/services/history.service";
+import { PaletteService } from "@core/services/palette.service";
 import { StorageService } from "@core/services/storage.service";
 import { TreeService } from "@core/services/tree.service";
 import { TreeLayoutService } from "@core/services/tree-layout.service";
@@ -312,7 +313,7 @@ import { ConfirmDialogComponent } from "../../shared/confirm-dialog.component";
         <mat-sidenav-content class="canvas-area">
           <div class="canvas-with-panels">
             <!-- Main view -->
-            <div class="main-view" [style]="themeStyle">
+            <div class="main-view">
               @if (showThemePicker()) {
                 <div class="theme-overlay">
                   <app-theme-picker
@@ -631,6 +632,7 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 	private translate = inject(TranslateService);
 	private historyService = inject(HistoryService);
 	private breakpointObserver = inject(BreakpointObserver);
+	private paletteService = inject(PaletteService);
 
 	isMobile = false;
 	sidenavOpen = true;
@@ -675,6 +677,16 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 		this.subs.add(
 			this.treeService.activeTree$.subscribe((tree) => {
 				this.tree = tree ?? null;
+				// Sync palette: validate tree theme; fix it if corrupted.
+				if (this.tree) {
+					if (this.paletteService.isValid(this.tree.theme)) {
+						this.paletteService.setPalette(this.tree.theme);
+					} else {
+						// Replace invalid/missing tree theme with the global palette.
+						const globalPalette = this.paletteService.palette();
+						void this.storageService.saveTree({ ...this.tree, theme: globalPalette });
+					}
+				}
 				this.cdr.markForCheck();
 			}),
 		);
@@ -710,6 +722,9 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 		this.subs.unsubscribe();
 		this.treeService.setActiveTree(null);
 		this.historyService.clearTree(this.tree?.id ?? "");
+		// Restore the persisted global palette so the dashboard (and any other
+		// view) reflects the correct colours after leaving the tree editor.
+		this.paletteService.setPalette(this.paletteService.palette());
 	}
 
 	async undoAction(): Promise<void> {
@@ -940,20 +955,22 @@ export class TreeEditorComponent implements OnInit, OnDestroy {
 
 	// ── Theme ─────────────────────────────────────
 
-	get themeStyle(): Record<string, string> {
-		const t = this.tree?.theme;
-		if (!t) return {};
-		return {
-			"--red": t.accentColor,
-			"--text-accent": t.accentColor,
-			"--red-dim": `${t.accentColor}1a`,
-			"--border-accent": `${t.accentColor}99`,
-		};
-	}
-
 	async applyTheme(theme: TreeTheme): Promise<void> {
 		if (!this.tree) return;
+		// 1. Persist the new theme to the current tree.
 		await this.storageService.saveTree({ ...this.tree, theme });
+		// 2. Update the global palette (applies CSS vars to document root
+		//    so ALL elements — including Material overlays — receive the change
+		//    without a page reload).
+		this.paletteService.setPalette(theme);
+		// 3. Propagate the new palette to every other tree so each tree's
+		//    stored theme stays in sync with the global palette.
+		const allTrees = this.storageService.getAllTrees();
+		for (const t of allTrees) {
+			if (t.id !== this.tree.id) {
+				void this.storageService.saveTree({ ...t, theme });
+			}
+		}
 		this.showThemePicker.set(false);
 		this.snack.open(this.translate.instant("TREE_EDITOR.SNACK.THEME_APPLIED"), "", { duration: 2000 });
 	}

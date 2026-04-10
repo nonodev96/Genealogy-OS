@@ -123,6 +123,11 @@ export class StorageService implements OnDestroy {
 		return this._trees$.getValue().find((t) => t.id === treeId) ?? null;
 	}
 
+	/** Returns a snapshot of all currently cached trees. */
+	getAllTrees(): FamilyTree[] {
+		return this._trees$.getValue();
+	}
+
 	getTreeByCollaborationToken(token: string): FamilyTree | null {
 		return (
 			this._trees$
