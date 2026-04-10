@@ -5,8 +5,15 @@ const LS_KEY = "genealogy_palette";
 
 export const DEFAULT_PALETTE: TreeTheme = {
 	accentColor: "#ff3333",
-	nodeBg: "#1c1c1c",
+	nodeBackground: "#1c1c1c",
 	edgeColor: "#f0f0f0",
+	personRowBackground: "#0c0c0c",
+	personRowText: "#f0f0f0",
+	personRowBorder: "#1e1e1e",
+	nodeBorder: "#333333",
+	nodeText: "#f0f0f0",
+	nodeSelectedBackground: "#1a0000",
+	nodeSelectedBorder: "#ff3333",
 };
 
 @Injectable({ providedIn: "root" })
@@ -35,14 +42,21 @@ export class PaletteService {
 		this.palette.set({ ...theme });
 	}
 
-	/** Returns true when all three fields are valid 6-digit hex colours. */
+	/** Returns true when all palette fields are valid 6-digit hex colours. */
 	isValid(theme: unknown): theme is TreeTheme {
 		if (!theme || typeof theme !== "object") return false;
 		const t = theme as TreeTheme;
 		return (
 			this.isHex(t.accentColor) &&
-			this.isHex(t.nodeBg) &&
-			this.isHex(t.edgeColor)
+			this.isHex(t.nodeBackground) &&
+			this.isHex(t.edgeColor) &&
+			this.isHex(t.personRowBackground) &&
+			this.isHex(t.personRowText) &&
+			this.isHex(t.personRowBorder) &&
+			this.isHex(t.nodeBorder) &&
+			this.isHex(t.nodeText) &&
+			this.isHex(t.nodeSelectedBackground) &&
+			this.isHex(t.nodeSelectedBorder)
 		);
 	}
 
@@ -56,19 +70,22 @@ export class PaletteService {
 		try {
 			const raw = localStorage.getItem(LS_KEY);
 			if (raw) {
-				const parsed: unknown = JSON.parse(raw);
-				if (this.isValid(parsed)) return parsed;
+				const stored: unknown = JSON.parse(raw);
+				if (stored && typeof stored === "object") {
+					// Migrate old themes: `nodeBg` was renamed to `nodeBackground`.
+					const legacy = stored as Record<string, unknown>;
+					if (!legacy["nodeBackground"] && legacy["nodeBg"]) {
+						legacy["nodeBackground"] = legacy["nodeBg"];
+					}
+					// Merge stored values over defaults so new keys are always present.
+					const merged: TreeTheme = { ...DEFAULT_PALETTE, ...legacy } as TreeTheme;
+					if (this.isValid(merged)) return merged;
+				}
 			}
 		} catch {
 			// ignore parse errors
 		}
-		const def: TreeTheme = { ...DEFAULT_PALETTE };
-		try {
-			localStorage.setItem(LS_KEY, JSON.stringify(def));
-		} catch {
-			// ignore write errors (e.g. private browsing quota)
-		}
-		return def;
+		return { ...DEFAULT_PALETTE };
 	}
 
 	private saveToStorage(theme: TreeTheme): void {
@@ -95,8 +112,17 @@ export class PaletteService {
 			"--red-glow",
 			`0 0 16px ${this.hexToRgba(accentColor, 0.35)}`,
 		);
-		root.style.setProperty("--node-bg", theme.nodeBg);
+		root.style.setProperty("--node-bg", theme.nodeBackground);
 		root.style.setProperty("--edge-color", theme.edgeColor);
+		// Person-row CSS vars
+		root.style.setProperty("--person-row-bg", theme.personRowBackground);
+		root.style.setProperty("--person-row-text", theme.personRowText);
+		root.style.setProperty("--person-row-border", theme.personRowBorder);
+		// Node CSS vars
+		root.style.setProperty("--node-border", theme.nodeBorder);
+		root.style.setProperty("--node-text", theme.nodeText);
+		root.style.setProperty("--node-sel-bg", theme.nodeSelectedBackground);
+		root.style.setProperty("--node-sel-border", theme.nodeSelectedBorder);
 	}
 
 	/** Convert a 6-digit hex colour string to `rgba(r, g, b, alpha)`. */

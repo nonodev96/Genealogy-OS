@@ -231,6 +231,13 @@
     "ACCENT": "accent",
     "NODE_BG": "node_bg",
     "EDGE_COLOR": "edge_color",
+    "PERSON_ROW_BG": "person_row_bg",
+    "PERSON_ROW_TEXT": "person_row_text",
+    "PERSON_ROW_BORDER": "person_row_border",
+    "NODE_BORDER": "node_border",
+    "NODE_TEXT": "node_text",
+    "NODE_SEL_BG": "node_selected_bg",
+    "NODE_SEL_BORDER": "node_selected_border",
     "APPLY": "apply"
   },
   "TAGS": {
