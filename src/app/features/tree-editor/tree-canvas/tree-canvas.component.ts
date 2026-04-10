@@ -259,6 +259,7 @@ export class TreeCanvasComponent
 	// ── Group / Marquee selection state ───────────────────────────────────
 	private selectedGroupIds = new Set<string>();
 	private marqueeActive = false;
+	private marqueeModifier = false;
 	private marqueeStartSvg = { x: 0, y: 0 };
 	private marqueeEndSvg = { x: 0, y: 0 };
 	private marqueeRect!: d3.Selection<SVGRectElement, unknown, null, undefined>;
@@ -352,6 +353,8 @@ export class TreeCanvasComponent
 			});
 
 		this.svg.call(this.zoom).on("click", (ev: MouseEvent) => {
+			// Modifier click on background should not clear the group selection
+			if (ev.shiftKey || ev.ctrlKey) return;
 			if (
 				(ev.target as Element).tagName === "svg" ||
 				(ev.target as Element).classList.contains("bg-rect")
@@ -364,9 +367,12 @@ export class TreeCanvasComponent
 		// Cache the marquee rect element
 		this.marqueeRect = this.svg.select<SVGRectElement>(".marquee-rect");
 
-		// Marquee: mousedown on the background rect starts a drag-to-select
+		// Marquee: mousedown on the background rect starts a drag-to-select.
+		// Only left-click (button 0) triggers marquee; middle-click (button 1)
+		// is intentionally allowed to bubble up to d3 zoom for canvas panning.
 		this.svg.select(".bg-rect").on("mousedown.marquee", (ev: MouseEvent) => {
 			if (this.readOnly) return;
+			if (ev.button !== 0) return; // Only left-click for marquee
 			ev.stopPropagation(); // prevent d3.zoom from panning
 			this.startMarquee(ev);
 		});
@@ -374,8 +380,10 @@ export class TreeCanvasComponent
 		// Bind move/up to window so drag works even if cursor leaves SVG.
 		// Remove any previously registered handlers first to prevent duplicates
 		// if initD3() were ever called more than once.
-		if (this.onMouseMoveBound) window.removeEventListener("mousemove", this.onMouseMoveBound);
-		if (this.onMouseUpBound) window.removeEventListener("mouseup", this.onMouseUpBound);
+		if (this.onMouseMoveBound)
+			window.removeEventListener("mousemove", this.onMouseMoveBound);
+		if (this.onMouseUpBound)
+			window.removeEventListener("mouseup", this.onMouseUpBound);
 		this.onMouseMoveBound = (ev: MouseEvent) => this.updateMarquee(ev);
 		this.onMouseUpBound = (ev: MouseEvent) => this.endMarquee(ev);
 		window.addEventListener("mousemove", this.onMouseMoveBound);
@@ -392,6 +400,7 @@ export class TreeCanvasComponent
 	private startMarquee(ev: MouseEvent): void {
 		const pt = this.svgPoint(ev);
 		this.marqueeActive = true;
+		this.marqueeModifier = ev.shiftKey || ev.ctrlKey;
 		this.marqueeStartSvg = pt;
 		this.marqueeEndSvg = pt;
 		const pal = this.paletteService.palette();
@@ -401,7 +410,10 @@ export class TreeCanvasComponent
 			.attr("y", pt.y)
 			.attr("width", 0)
 			.attr("height", 0)
-			.attr("fill", this.paletteService.hexToRgba(pal.selectionBackground, 0.15))
+			.attr(
+				"fill",
+				this.paletteService.hexToRgba(pal.selectionBackground, 0.15),
+			)
 			.attr("stroke", pal.selectionBorder)
 			.attr("stroke-width", 1)
 			.attr("stroke-dasharray", "4,3");
@@ -432,10 +444,14 @@ export class TreeCanvasComponent
 		const h = Math.abs(this.marqueeEndSvg.y - this.marqueeStartSvg.y);
 
 		if (w < MARQUEE_MIN_SIZE || h < MARQUEE_MIN_SIZE) {
-			// Too small – treat as background click: clear group, deselect
-			this.selectedGroupIds.clear();
-			if (this.g && this.layout) this.updateGroupHighlights();
-			this.backgroundClick.emit();
+			// Too small – treat as background click.
+			// With a modifier key active we leave the existing selection untouched;
+			// without a modifier we clear the group and deselect.
+			if (!this.marqueeModifier) {
+				this.selectedGroupIds.clear();
+				if (this.g && this.layout) this.updateGroupHighlights();
+				this.backgroundClick.emit();
+			}
 			return;
 		}
 
@@ -469,7 +485,18 @@ export class TreeCanvasComponent
 			});
 		}
 
-		this.selectedGroupIds = newGroup;
+		if (this.marqueeModifier) {
+			// Shift/Ctrl held: toggle intersected nodes into/out of existing selection
+			newGroup.forEach((id) => {
+				if (this.selectedGroupIds.has(id)) {
+					this.selectedGroupIds.delete(id);
+				} else {
+					this.selectedGroupIds.add(id);
+				}
+			});
+		} else {
+			this.selectedGroupIds = newGroup;
+		}
 		if (this.g && this.layout) this.updateGroupHighlights();
 
 		// When nothing was selected, emit backgroundClick so the parent deselects
@@ -500,7 +527,10 @@ export class TreeCanvasComponent
 					.attr("width", nw + 8)
 					.attr("height", NODE_H + 8)
 					.attr("rx", 6)
-					.attr("fill", this.paletteService.hexToRgba(pal.selectionBackground, 0.2))
+					.attr(
+						"fill",
+						this.paletteService.hexToRgba(pal.selectionBackground, 0.2),
+					)
 					.attr("stroke", pal.selectionBorder)
 					.attr("stroke-width", 1.5)
 					.attr("stroke-opacity", 0.85);
@@ -662,7 +692,19 @@ export class TreeCanvasComponent
 				.attr("cursor", this.readOnly ? "default" : "grab")
 				.on("click", (ev: MouseEvent) => {
 					ev.stopPropagation();
-					this.personClick.emit(nodeId);
+					if (ev.shiftKey || ev.ctrlKey) {
+						// Shift/Ctrl+click: toggle this node in/out of the group selection
+						if (this.selectedGroupIds.has(nodeId)) {
+							this.selectedGroupIds.delete(nodeId);
+						} else {
+							this.selectedGroupIds.add(nodeId);
+						}
+						this.updateGroupHighlights();
+					} else {
+						// Plain click: clear group and select this node
+						this.selectedGroupIds.clear();
+						this.personClick.emit(nodeId);
+					}
 				})
 				.on("dblclick", (ev: MouseEvent) => {
 					ev.stopPropagation();
@@ -673,6 +715,10 @@ export class TreeCanvasComponent
 			if (!this.readOnly) {
 				let rawX = 0,
 					rawY = 0;
+				// Per-drag group start positions for snap-to-grid in group mode
+				let groupStartPositions = new Map<string, { x: number; y: number }>();
+				let groupRawDX = 0,
+					groupRawDY = 0;
 				grp.call(
 					d3
 						.drag<SVGGElement, unknown>()
@@ -690,17 +736,40 @@ export class TreeCanvasComponent
 								this.selectedGroupIds.clear();
 								this.updateGroupHighlights();
 							}
+							// Capture start positions for all group members (enables snap)
+							if (
+								this.selectedGroupIds.has(nodeId) &&
+								this.selectedGroupIds.size > 1
+							) {
+								groupRawDX = 0;
+								groupRawDY = 0;
+								groupStartPositions = new Map();
+								this.selectedGroupIds.forEach((gid) => {
+									const gPos = this.nodePositions.get(gid)!;
+									groupStartPositions.set(gid, { x: gPos.x, y: gPos.y });
+								});
+							}
 						})
 						.on("drag", (ev) => {
 							if (
 								this.selectedGroupIds.has(nodeId) &&
 								this.selectedGroupIds.size > 1
 							) {
-								// Group drag: move all selected nodes by the same raw delta
+								// Group drag: move all selected nodes by accumulated delta
+								// Shift activates snap-to-grid using start positions as reference
+								groupRawDX += ev.dx;
+								groupRawDY += ev.dy;
+								const snap = ev.sourceEvent.shiftKey;
 								this.selectedGroupIds.forEach((gid) => {
+									const startPos = groupStartPositions.get(gid)!;
 									const gPos = this.nodePositions.get(gid)!;
-									gPos.x += ev.dx;
-									gPos.y += ev.dy;
+									if (snap) {
+										gPos.x = snapToGrid(startPos.x + groupRawDX);
+										gPos.y = snapToGrid(startPos.y + groupRawDY);
+									} else {
+										gPos.x = startPos.x + groupRawDX;
+										gPos.y = startPos.y + groupRawDY;
+									}
 									this.g
 										.select<SVGGElement>(`.nodes g[data-nid="${gid}"]`)
 										.attr("transform", `translate(${gPos.x},${gPos.y})`);
@@ -712,11 +781,11 @@ export class TreeCanvasComponent
 									);
 								});
 							} else {
-								// Single node drag (with optional snap-to-grid)
+								// Single node drag – Shift activates snap-to-grid
 								const p = this.nodePositions.get(nodeId)!;
 								rawX += ev.dx;
 								rawY += ev.dy;
-								if (ev.sourceEvent.ctrlKey) {
+								if (ev.sourceEvent.shiftKey) {
 									p.x = snapToGrid(rawX);
 									p.y = snapToGrid(rawY);
 								} else {
