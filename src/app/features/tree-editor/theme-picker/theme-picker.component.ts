@@ -65,7 +65,7 @@ const PRESETS: { label: string; theme: TreeTheme }[] = [
           <mat-icon>close</mat-icon>
         </button>
       </div>
-      <div class="tp-body">
+      <div class="tp-body" tabindex="0">
 
         <!-- Presets -->
         <p class="tp-label">{{ 'THEME.PRESETS' | translate }}</p>

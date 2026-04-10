@@ -256,12 +256,15 @@ export class TreeCanvasComponent
 	private zoom!: d3.ZoomBehavior<SVGSVGElement, unknown>;
 	private svg!: d3.Selection<SVGSVGElement, unknown, null, undefined>;
 	private g!: d3.Selection<SVGGElement, unknown, null, undefined>;
+	private destroyed = false;
 
 	constructor() {
 		// Re-render nodes and edges whenever the active palette changes.
+		// Guard added: skip if the component has been destroyed (avoids
+		// potential D3 operations on detached DOM elements).
 		effect(() => {
 			this.paletteService.palette(); // track the signal
-			if (this.g && this.layout) this.render();
+			if (!this.destroyed && this.g && this.layout) this.render();
 		});
 	}
 
@@ -302,6 +305,7 @@ export class TreeCanvasComponent
 	}
 
 	ngOnDestroy(): void {
+		this.destroyed = true;
 		this.destroy$.next();
 		this.destroy$.complete();
 		if (this.svg) this.svg.on(".zoom", null);
@@ -669,7 +673,7 @@ export class TreeCanvasComponent
 	}
 
 	/* ── Edge stroke colour from palette ─────────── */
-	private edgeStroke(type: RelationType, pal: { edgeColor: string; accentColor: string; nodeBorder: string }): string {
+	private edgeStroke(type: RelationType, pal: Pick<import("@core/models").TreeTheme, "edgeColor" | "accentColor" | "nodeBorder">): string {
 		if (
 			PARENT_TYPES.includes(type) ||
 			["childOf", "descendantOf", "adoptiveChildOf", "stepChildOf", "wardOf"].includes(type)
