@@ -4,22 +4,19 @@ import {
 	Component,
 	type ElementRef,
 	EventEmitter,
+	effect,
 	Input,
 	inject,
-	effect,
 	type OnChanges,
 	type OnDestroy,
 	type OnInit,
 	Output,
 	type SimpleChanges,
-	ViewChild,
 	signal,
+	ViewChild,
 } from "@angular/core";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { TranslatePipe } from "@ngx-translate/core";
-import * as d3 from "d3";
-import { Subject, takeUntil } from "rxjs";
 import {
 	type FamilyTree,
 	PARENT_TYPES,
@@ -36,9 +33,17 @@ import {
 	NODE_W,
 	TreeLayoutService,
 } from "@core/services/tree-layout.service";
+import { TranslatePipe } from "@ngx-translate/core";
+import * as d3 from "d3";
+import { Subject, takeUntil } from "rxjs";
 
 const GRID_SIZE = 40;
-function snapToGrid(v: number): number { return Math.round(v / GRID_SIZE) * GRID_SIZE; }
+function snapToGrid(v: number): number {
+	return Math.round(v / GRID_SIZE) * GRID_SIZE;
+}
+
+// Minimum drag distance (px in SVG viewport) to treat as a marquee rather than a click
+const MARQUEE_MIN_SIZE = 5;
 
 // Static fallback colours (used only when palette is unavailable)
 const C_DIM = "rgba(255,255,255,0.07)";
@@ -113,9 +118,11 @@ const C_MID = "rgba(255,255,255,0.14)";
           </filter>
         </defs>
         <!-- Background dot grid -->
-        <rect width="100%" height="100%" fill="url(#dot-grid)"/>
+        <rect class="bg-rect" width="100%" height="100%" fill="url(#dot-grid)"/>
         <!-- Zoom layer -->
         <g class="zoom-layer" #zoomLayer></g>
+        <!-- Marquee selection overlay (SVG viewport space) -->
+        <rect class="marquee-rect" display="none" pointer-events="none"/>
       </svg>
 
       <!-- Empty state -->
@@ -241,13 +248,22 @@ export class TreeCanvasComponent
 	@ViewChild("wrapper") wrapperRef!: ElementRef<HTMLDivElement>;
 
 	currentScale = 1;
-	linkStyle = signal<'curved' | 'orthogonal'>('curved');
+	linkStyle = signal<"curved" | "orthogonal">("curved");
 	private nodePositions = new Map<string, { x: number; y: number }>();
 	private currentTreeId: string | null = null;
 	private syncedNodePositions:
 		| Record<string, { x: number; y: number }>
 		| undefined = undefined;
 	private destroy$ = new Subject<void>();
+
+	// ── Group / Marquee selection state ───────────────────────────────────
+	private selectedGroupIds = new Set<string>();
+	private marqueeActive = false;
+	private marqueeStartSvg = { x: 0, y: 0 };
+	private marqueeEndSvg = { x: 0, y: 0 };
+	private marqueeRect!: d3.Selection<SVGRectElement, unknown, null, undefined>;
+	private onMouseMoveBound!: (ev: MouseEvent) => void;
+	private onMouseUpBound!: (ev: MouseEvent) => void;
 
 	private storage = inject(StorageService);
 	private treeService = inject(TreeService);
@@ -309,6 +325,10 @@ export class TreeCanvasComponent
 		this.destroy$.next();
 		this.destroy$.complete();
 		if (this.svg) this.svg.on(".zoom", null);
+		if (this.onMouseMoveBound)
+			window.removeEventListener("mousemove", this.onMouseMoveBound);
+		if (this.onMouseUpBound)
+			window.removeEventListener("mouseup", this.onMouseUpBound);
 	}
 
 	private initD3(): void {
@@ -318,6 +338,14 @@ export class TreeCanvasComponent
 		this.zoom = d3
 			.zoom<SVGSVGElement, unknown>()
 			.scaleExtent([0.08, 3])
+			.filter((ev: Event) => {
+				// Suppress zoom/pan when a marquee drag is in progress
+				if (this.marqueeActive) return false;
+				// Default d3 zoom filter: allow wheel and non-right-click mousedown
+				return (
+					!(ev as MouseEvent).ctrlKey && !((ev as MouseEvent).button === 2)
+				);
+			})
 			.on("zoom", (ev: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
 				this.g.attr("transform", ev.transform.toString());
 				this.currentScale = ev.transform.k;
@@ -326,10 +354,178 @@ export class TreeCanvasComponent
 		this.svg.call(this.zoom).on("click", (ev: MouseEvent) => {
 			if (
 				(ev.target as Element).tagName === "svg" ||
-				((ev.target as Element).tagName === "rect" &&
-					(ev.target as Element).getAttribute("fill") === "url(#dot-grid)")
-			)
+				(ev.target as Element).classList.contains("bg-rect")
+			) {
+				this.selectedGroupIds.clear();
 				this.backgroundClick.emit();
+			}
+		});
+
+		// Cache the marquee rect element
+		this.marqueeRect = this.svg.select<SVGRectElement>(".marquee-rect");
+
+		// Marquee: mousedown on the background rect starts a drag-to-select
+		this.svg.select(".bg-rect").on("mousedown.marquee", (ev: MouseEvent) => {
+			if (this.readOnly) return;
+			ev.stopPropagation(); // prevent d3.zoom from panning
+			this.startMarquee(ev);
+		});
+
+		// Bind move/up to window so drag works even if cursor leaves SVG.
+		// Remove any previously registered handlers first to prevent duplicates
+		// if initD3() were ever called more than once.
+		if (this.onMouseMoveBound) window.removeEventListener("mousemove", this.onMouseMoveBound);
+		if (this.onMouseUpBound) window.removeEventListener("mouseup", this.onMouseUpBound);
+		this.onMouseMoveBound = (ev: MouseEvent) => this.updateMarquee(ev);
+		this.onMouseUpBound = (ev: MouseEvent) => this.endMarquee(ev);
+		window.addEventListener("mousemove", this.onMouseMoveBound);
+		window.addEventListener("mouseup", this.onMouseUpBound);
+	}
+
+	/* ── Marquee helpers ─────────────────────────── */
+
+	private svgPoint(ev: MouseEvent): { x: number; y: number } {
+		const rect = this.svgRef.nativeElement.getBoundingClientRect();
+		return { x: ev.clientX - rect.left, y: ev.clientY - rect.top };
+	}
+
+	private startMarquee(ev: MouseEvent): void {
+		const pt = this.svgPoint(ev);
+		this.marqueeActive = true;
+		this.marqueeStartSvg = pt;
+		this.marqueeEndSvg = pt;
+		const pal = this.paletteService.palette();
+		this.marqueeRect
+			.attr("display", "block")
+			.attr("x", pt.x)
+			.attr("y", pt.y)
+			.attr("width", 0)
+			.attr("height", 0)
+			.attr("fill", this.paletteService.hexToRgba(pal.selectionBackground, 0.15))
+			.attr("stroke", pal.selectionBorder)
+			.attr("stroke-width", 1)
+			.attr("stroke-dasharray", "4,3");
+	}
+
+	private updateMarquee(ev: MouseEvent): void {
+		if (!this.marqueeActive) return;
+		ev.preventDefault();
+		const pt = this.svgPoint(ev);
+		this.marqueeEndSvg = pt;
+		const x = Math.min(this.marqueeStartSvg.x, pt.x);
+		const y = Math.min(this.marqueeStartSvg.y, pt.y);
+		const w = Math.abs(pt.x - this.marqueeStartSvg.x);
+		const h = Math.abs(pt.y - this.marqueeStartSvg.y);
+		this.marqueeRect
+			.attr("x", x)
+			.attr("y", y)
+			.attr("width", w)
+			.attr("height", h);
+	}
+
+	private endMarquee(ev: MouseEvent): void {
+		if (!this.marqueeActive) return;
+		this.marqueeActive = false;
+		this.marqueeRect.attr("display", "none");
+
+		const w = Math.abs(this.marqueeEndSvg.x - this.marqueeStartSvg.x);
+		const h = Math.abs(this.marqueeEndSvg.y - this.marqueeStartSvg.y);
+
+		if (w < MARQUEE_MIN_SIZE || h < MARQUEE_MIN_SIZE) {
+			// Too small – treat as background click: clear group, deselect
+			this.selectedGroupIds.clear();
+			if (this.g && this.layout) this.updateGroupHighlights();
+			this.backgroundClick.emit();
+			return;
+		}
+
+		// Convert the SVG-viewport marquee rect corners to zoom-layer coordinates
+		const transform = d3.zoomTransform(this.svgRef.nativeElement);
+		const [lx1, ly1] = transform.invert([
+			Math.min(this.marqueeStartSvg.x, this.marqueeEndSvg.x),
+			Math.min(this.marqueeStartSvg.y, this.marqueeEndSvg.y),
+		]);
+		const [lx2, ly2] = transform.invert([
+			Math.max(this.marqueeStartSvg.x, this.marqueeEndSvg.x),
+			Math.max(this.marqueeStartSvg.y, this.marqueeEndSvg.y),
+		]);
+
+		// Select all nodes whose bounding box intersects the marquee rect
+		const newGroup = new Set<string>();
+		if (this.layout) {
+			this.layout.nodes.forEach((node) => {
+				const pos = this.nodePositions.get(node.id);
+				if (!pos) return;
+				const nw = this.nodeW(node.person.name);
+				// AABB overlap test
+				if (
+					pos.x < lx2 &&
+					pos.x + nw > lx1 &&
+					pos.y < ly2 &&
+					pos.y + NODE_H > ly1
+				) {
+					newGroup.add(node.id);
+				}
+			});
+		}
+
+		this.selectedGroupIds = newGroup;
+		if (this.g && this.layout) this.updateGroupHighlights();
+
+		// When nothing was selected, emit backgroundClick so the parent deselects
+		if (this.selectedGroupIds.size === 0) this.backgroundClick.emit();
+	}
+
+	/** Re-styles node cards to reflect the current group selection without a full re-render. */
+	private updateGroupHighlights(): void {
+		if (!this.g || !this.layout) return;
+		const pal = this.paletteService.palette();
+		this.layout.nodes.forEach((node) => {
+			const inGroup = this.selectedGroupIds.has(node.id);
+			const isSel = node.id === this.selectedPersonId;
+			const nw = this.nodeW(node.person.name);
+			const grpEl = this.g.select<SVGGElement>(
+				`.nodes g[data-nid="${node.id}"]`,
+			);
+			if (grpEl.empty()) return;
+
+			// Remove any existing group glow, then re-add if needed
+			grpEl.select(".grp-glow").remove();
+			if (inGroup) {
+				grpEl
+					.insert("rect", ":first-child")
+					.attr("class", "grp-glow")
+					.attr("x", -4)
+					.attr("y", -4)
+					.attr("width", nw + 8)
+					.attr("height", NODE_H + 8)
+					.attr("rx", 6)
+					.attr("fill", this.paletteService.hexToRgba(pal.selectionBackground, 0.2))
+					.attr("stroke", pal.selectionBorder)
+					.attr("stroke-width", 1.5)
+					.attr("stroke-opacity", 0.85);
+			}
+
+			// Update card rect fill/stroke (first rect that is not the glow overlay)
+			grpEl
+				.select<SVGRectElement>("rect:not(.grp-glow)")
+				.attr(
+					"fill",
+					inGroup
+						? this.paletteService.hexToRgba(pal.selectionBackground, 0.25)
+						: isSel
+							? pal.nodeSelectedBackground
+							: pal.nodeBackground,
+				)
+				.attr(
+					"stroke",
+					inGroup
+						? pal.selectionBorder
+						: isSel
+							? pal.nodeSelectedBorder
+							: pal.nodeBorder,
+				)
+				.attr("stroke-width", inGroup ? 1.2 : isSel ? 1 : 0.8);
 		});
 	}
 
@@ -358,6 +554,8 @@ export class TreeCanvasComponent
 		this.g.selectAll("*").remove();
 		this.renderEdges();
 		this.renderNodes();
+		// Re-apply group selection highlights after a full re-render
+		if (this.selectedGroupIds.size > 0) this.updateGroupHighlights();
 	}
 
 	/* ── Edge path computation ───────────────────── */
@@ -365,7 +563,7 @@ export class TreeCanvasComponent
 		const isV = Math.abs(y2 - y1) > Math.abs(x2 - x1);
 		const mx = (x1 + x2) / 2;
 		const my = (y1 + y2) / 2;
-		if (this.linkStyle() === 'orthogonal') {
+		if (this.linkStyle() === "orthogonal") {
 			return isV
 				? `M${x1},${y1} L${x1},${my} L${x2},${my} L${x2},${y2}`
 				: `M${x1},${y1} L${mx},${y1} L${mx},${y2} L${x2},${y2}`;
@@ -473,7 +671,8 @@ export class TreeCanvasComponent
 
 			/* Drag behaviour */
 			if (!this.readOnly) {
-				let rawX = 0, rawY = 0;
+				let rawX = 0,
+					rawY = 0;
 				grp.call(
 					d3
 						.drag<SVGGElement, unknown>()
@@ -483,21 +682,51 @@ export class TreeCanvasComponent
 							const p = this.nodePositions.get(nodeId)!;
 							rawX = p.x;
 							rawY = p.y;
+							// If dragging a node not in the current group, clear the group
+							if (
+								!this.selectedGroupIds.has(nodeId) &&
+								this.selectedGroupIds.size > 0
+							) {
+								this.selectedGroupIds.clear();
+								this.updateGroupHighlights();
+							}
 						})
 						.on("drag", (ev) => {
-							const p = this.nodePositions.get(nodeId)!;
-							rawX += ev.dx;
-							rawY += ev.dy;
-							if (ev.sourceEvent.ctrlKey) {
-								p.x = snapToGrid(rawX);
-								p.y = snapToGrid(rawY);
+							if (
+								this.selectedGroupIds.has(nodeId) &&
+								this.selectedGroupIds.size > 1
+							) {
+								// Group drag: move all selected nodes by the same raw delta
+								this.selectedGroupIds.forEach((gid) => {
+									const gPos = this.nodePositions.get(gid)!;
+									gPos.x += ev.dx;
+									gPos.y += ev.dy;
+									this.g
+										.select<SVGGElement>(`.nodes g[data-nid="${gid}"]`)
+										.attr("transform", `translate(${gPos.x},${gPos.y})`);
+									this.storage.broadcastNodeMove(
+										this.tree.id,
+										gid,
+										gPos.x,
+										gPos.y,
+									);
+								});
 							} else {
-								p.x = rawX;
-								p.y = rawY;
+								// Single node drag (with optional snap-to-grid)
+								const p = this.nodePositions.get(nodeId)!;
+								rawX += ev.dx;
+								rawY += ev.dy;
+								if (ev.sourceEvent.ctrlKey) {
+									p.x = snapToGrid(rawX);
+									p.y = snapToGrid(rawY);
+								} else {
+									p.x = rawX;
+									p.y = rawY;
+								}
+								grp.attr("transform", `translate(${p.x},${p.y})`);
+								this.storage.broadcastNodeMove(this.tree.id, nodeId, p.x, p.y);
 							}
-							grp.attr("transform", `translate(${p.x},${p.y})`);
 							this.updateEdgePaths();
-							this.storage.broadcastNodeMove(this.tree.id, nodeId, p.x, p.y);
 						})
 						.on("end", () => {
 							grp.attr("cursor", "grab");
@@ -673,10 +902,22 @@ export class TreeCanvasComponent
 	}
 
 	/* ── Edge stroke colour from palette ─────────── */
-	private edgeStroke(type: RelationType, pal: Pick<import("@core/models").TreeTheme, "edgeColor" | "accentColor" | "nodeBorder">): string {
+	private edgeStroke(
+		type: RelationType,
+		pal: Pick<
+			import("@core/models").TreeTheme,
+			"edgeColor" | "accentColor" | "nodeBorder"
+		>,
+	): string {
 		if (
 			PARENT_TYPES.includes(type) ||
-			["childOf", "descendantOf", "adoptiveChildOf", "stepChildOf", "wardOf"].includes(type)
+			[
+				"childOf",
+				"descendantOf",
+				"adoptiveChildOf",
+				"stepChildOf",
+				"wardOf",
+			].includes(type)
 		)
 			return pal.edgeColor;
 		if (PARTNER_TYPES.includes(type)) return pal.accentColor;
@@ -712,7 +953,9 @@ export class TreeCanvasComponent
 	}
 
 	onLinkStyleChange(ev: Event): void {
-		const val = (ev.target as HTMLSelectElement).value as 'curved' | 'orthogonal';
+		const val = (ev.target as HTMLSelectElement).value as
+			| "curved"
+			| "orthogonal";
 		this.linkStyle.set(val);
 		this.updateEdgePaths();
 	}

@@ -10,45 +10,77 @@ import {
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
-import { TranslatePipe } from "@ngx-translate/core";
 import type { TreeTheme } from "@core/models";
 import { DEFAULT_PALETTE } from "@core/services/palette.service";
+import { TranslatePipe } from "@ngx-translate/core";
 
 const PRESETS: { label: string; theme: TreeTheme }[] = [
 	{
 		label: "default",
 		theme: {
-			accentColor: "#ff3333", nodeBackground: "#1c1c1c", edgeColor: "#f0f0f0",
-			personRowBackground: "#0c0c0c", personRowText: "#f0f0f0", personRowBorder: "#1e1e1e",
-			nodeBorder: "#333333", nodeText: "#f0f0f0",
-			nodeSelectedBackground: "#1a0000", nodeSelectedBorder: "#ff3333",
+			accentColor: "#ff3333",
+			nodeBackground: "#1c1c1c",
+			edgeColor: "#f0f0f0",
+			personRowBackground: "#0c0c0c",
+			personRowText: "#f0f0f0",
+			personRowBorder: "#1e1e1e",
+			nodeBorder: "#333333",
+			nodeText: "#f0f0f0",
+			nodeSelectedBackground: "#1a0000",
+			nodeSelectedBorder: "#ff3333",
+			selectionBorder: "#4499ff",
+			selectionBackground: "#2266cc",
 		},
 	},
 	{
 		label: "ocean",
 		theme: {
-			accentColor: "#00bcd4", nodeBackground: "#0d2035", edgeColor: "#80deea",
-			personRowBackground: "#07192b", personRowText: "#e0f7fa", personRowBorder: "#1a4060",
-			nodeBorder: "#1a4060", nodeText: "#e0f7fa",
-			nodeSelectedBackground: "#003344", nodeSelectedBorder: "#00bcd4",
+			accentColor: "#00bcd4",
+			nodeBackground: "#0d2035",
+			edgeColor: "#80deea",
+			personRowBackground: "#07192b",
+			personRowText: "#e0f7fa",
+			personRowBorder: "#1a4060",
+			nodeBorder: "#1a4060",
+			nodeText: "#e0f7fa",
+			nodeSelectedBackground: "#003344",
+			nodeSelectedBorder: "#00bcd4",
+			selectionBorder: "#00e5ff",
+			selectionBackground: "#0097a7",
 		},
 	},
 	{
 		label: "forest",
 		theme: {
-			accentColor: "#4caf50", nodeBackground: "#1a2a1a", edgeColor: "#a5d6a7",
-			personRowBackground: "#111a11", personRowText: "#e8f5e9", personRowBorder: "#2a4a2a",
-			nodeBorder: "#2a4a2a", nodeText: "#e8f5e9",
-			nodeSelectedBackground: "#0d200d", nodeSelectedBorder: "#4caf50",
+			accentColor: "#4caf50",
+			nodeBackground: "#1a2a1a",
+			edgeColor: "#a5d6a7",
+			personRowBackground: "#111a11",
+			personRowText: "#e8f5e9",
+			personRowBorder: "#2a4a2a",
+			nodeBorder: "#2a4a2a",
+			nodeText: "#e8f5e9",
+			nodeSelectedBackground: "#0d200d",
+			nodeSelectedBorder: "#4caf50",
+			selectionBorder: "#69f0ae",
+			selectionBackground: "#2e7d32",
 		},
 	},
 	{
 		label: "sunset",
 		theme: {
-			accentColor: "#ff6f00", nodeBackground: "#1a0d00", edgeColor: "#ffcc02",
-			personRowBackground: "#110800", personRowText: "#fff8e1", personRowBorder: "#3d2000",
-			nodeBorder: "#3d2000", nodeText: "#fff8e1",
-			nodeSelectedBackground: "#220c00", nodeSelectedBorder: "#ff6f00",
+			accentColor: "#ff6f00",
+			nodeBackground: "#1a0d00",
+			edgeColor: "#ffcc02",
+			personRowBackground: "#110800",
+			personRowText: "#fff8e1",
+			personRowBorder: "#3d2000",
+			nodeBorder: "#3d2000",
+			nodeText: "#fff8e1",
+			nodeSelectedBackground: "#220c00",
+			nodeSelectedBorder: "#ff6f00",
+			selectionBorder: "#ffab40",
+			selectionBackground: "#e65100",
 		},
 	},
 ];
@@ -146,6 +178,18 @@ const PRESETS: { label: string; theme: TreeTheme }[] = [
               (ngModelChange)="updateField('nodeSelectedBorder', $event)"/>
             <span class="color-hex">{{ current().nodeSelectedBorder }}</span>
           </div>
+          <div class="color-row">
+            <label class="color-lbl" for="selection-border">{{ 'THEME.SELECTION_BORDER' | translate }}</label>
+            <input id="selection-border" type="color" class="color-input" [ngModel]="current().selectionBorder"
+              (ngModelChange)="updateField('selectionBorder', $event)"/>
+            <span class="color-hex">{{ current().selectionBorder }}</span>
+          </div>
+          <div class="color-row">
+            <label class="color-lbl" for="selection-bg">{{ 'THEME.SELECTION_BG' | translate }}</label>
+            <input id="selection-bg" type="color" class="color-input" [ngModel]="current().selectionBackground"
+              (ngModelChange)="updateField('selectionBackground', $event)"/>
+            <span class="color-hex">{{ current().selectionBackground }}</span>
+          </div>
         </div>
 
         <button class="apply-btn" (click)="onApply()">
@@ -154,7 +198,8 @@ const PRESETS: { label: string; theme: TreeTheme }[] = [
       </div>
     </div>
   `,
-	styles: [`
+	styles: [
+		`
     :host { display:block; }
     .theme-picker {
       width:260px; background:var(--bg-surface);
@@ -198,7 +243,8 @@ const PRESETS: { label: string; theme: TreeTheme }[] = [
     }
     .apply-btn:hover { background:var(--red); color:#fff; }
     .apply-btn mat-icon { font-size:14px !important; width:14px !important; height:14px !important; }
-  `],
+  `,
+	],
 })
 export class ThemePickerComponent {
 	readonly initialTheme = input<TreeTheme | undefined>(undefined);

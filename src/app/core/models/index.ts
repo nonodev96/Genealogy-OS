@@ -96,6 +96,9 @@ export interface TreeTheme {
 	nodeText: string; // hex color
 	nodeSelectedBackground: string; // hex color
 	nodeSelectedBorder: string; // hex color
+	// Marquee / group-selection palette
+	selectionBorder: string; // hex color – marquee rect border + group-selected node border
+	selectionBackground: string; // hex color – marquee rect fill (applied with opacity)
 }
 
 // ── Person Comment ────────────────────────────
